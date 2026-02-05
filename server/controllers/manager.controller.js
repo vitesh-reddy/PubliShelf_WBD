@@ -4,7 +4,7 @@ import {
   getManagerById,
   createManager,
   updateManagerProfile,
-  // Books
+  // Books (temporarily disabled in UI but controllers remain)
   getAllPendingBooks,
   getAllApprovedBooks,
   getAllRejectedBooks,
@@ -28,9 +28,8 @@ import {
   reinstatePublisher,
   // Analytics
   getManagerDashboardAnalytics,
-  getAuctionAnalytics,
+  getAuctionAnalytics
 } from "../services/manager.services.js";
-
 import { getAllBannedPublishers } from "../services/manager.services.js";
 import { getPublisherById as getPublisherDetails } from "../services/publisher.services.js";
 
@@ -43,7 +42,7 @@ export const getManagerProfile = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Manager not found",
-        data: null,
+        data: null
       });
     }
 
@@ -52,14 +51,14 @@ export const getManagerProfile = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Manager profile fetched successfully",
-      data: { user: manager, analytics },
+      data: { user: manager, analytics }
     });
   } catch (error) {
     console.error("Error in getManagerProfile:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -71,7 +70,7 @@ export const getManagerDashboard = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Manager not found",
-        data: null,
+        data: null
       });
     }
 
@@ -80,14 +79,14 @@ export const getManagerDashboard = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Dashboard data fetched successfully",
-      data: { manager, analytics },
+      data: { manager, analytics }
     });
   } catch (error) {
     console.error("Error in getManagerDashboard:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -100,7 +99,7 @@ export const updateManagerProfileController = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Current password is required",
-        data: null,
+        data: null
       });
     }
 
@@ -108,7 +107,7 @@ export const updateManagerProfileController = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "New passwords do not match",
-        data: null,
+        data: null
       });
     }
 
@@ -117,13 +116,13 @@ export const updateManagerProfileController = async (req, res) => {
       lastname,
       email,
       currentPassword,
-      newPassword,
+      newPassword
     });
 
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      data: updatedManager,
+      data: updatedManager
     });
   } catch (error) {
     console.error("Error in updateManagerProfileController:", error);
@@ -131,7 +130,7 @@ export const updateManagerProfileController = async (req, res) => {
     return res.status(statusCode).json({
       success: false,
       message: error.message || "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -144,7 +143,7 @@ export const createManagerSignup = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
-        data: null,
+        data: null
       });
     }
 
@@ -153,7 +152,7 @@ export const createManagerSignup = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Manager account created successfully",
-      data: manager,
+      data: manager
     });
   } catch (error) {
     console.error("Error in createManagerSignup:", error);
@@ -161,7 +160,7 @@ export const createManagerSignup = async (req, res) => {
     return res.status(statusCode).json({
       success: false,
       message: error.message || "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -174,14 +173,14 @@ export const getPendingBooks = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Pending books fetched successfully",
-      data: books,
+      data: books
     });
   } catch (error) {
     console.error("Error in getPendingBooks:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -192,14 +191,14 @@ export const getApprovedBooks = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Approved books fetched successfully",
-      data: books,
+      data: books
     });
   } catch (error) {
     console.error("Error in getApprovedBooks:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -210,70 +209,73 @@ export const getRejectedBooks = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Rejected books fetched successfully",
-      data: books,
+      data: books
     });
   } catch (error) {
     console.error("Error in getRejectedBooks:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const approveBookController = async (req, res) => {
   try {
-    const book = await approveBook(req.params.id);
+    const { id } = req.params;
+    const book = await approveBook(id);
     return res.status(200).json({
       success: true,
       message: "Book approved successfully",
-      data: book,
+      data: book
     });
   } catch (error) {
     console.error("Error in approveBookController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const rejectBookController = async (req, res) => {
   try {
+    const { id } = req.params;
     const { reason } = req.body;
-    const book = await rejectBook(req.params.id, reason);
+    const book = await rejectBook(id, reason);
     return res.status(200).json({
       success: true,
       message: "Book rejected successfully",
-      data: book,
+      data: book
     });
   } catch (error) {
     console.error("Error in rejectBookController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const flagBookController = async (req, res) => {
   try {
+    const { id } = req.params;
     const { remarks } = req.body;
-    const book = await flagBook(req.params.id, remarks);
+    const book = await flagBook(id, remarks);
     return res.status(200).json({
       success: true,
       message: "Book flagged successfully",
-      data: book,
+      data: book
     });
   } catch (error) {
     console.error("Error in flagBookController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -286,32 +288,40 @@ export const getPendingAuctions = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Pending auctions fetched successfully",
-      data: auctions,
+      data: auctions
     });
   } catch (error) {
     console.error("Error in getPendingAuctions:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const getApprovedAuctions = async (req, res) => {
   try {
-    const auctions = await getAllApprovedAuctions(req.user.id);
+    const managerId = req.user?.id; // token payload uses `id`
+    if (!managerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized: missing manager id",
+        data: null
+      });
+    }
+    const auctions = await getAllApprovedAuctions(managerId);
     return res.status(200).json({
       success: true,
       message: "Approved auctions fetched successfully",
-      data: auctions,
+      data: auctions
     });
   } catch (error) {
     console.error("Error in getApprovedAuctions:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -322,87 +332,118 @@ export const getRejectedAuctions = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Rejected auctions fetched successfully",
-      data: auctions,
+      data: auctions
     });
   } catch (error) {
     console.error("Error in getRejectedAuctions:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const getAuctionByIdController = async (req, res) => {
   try {
-    const auction = await getAuctionById(req.params.id);
+    const { id } = req.params;
+    const auction = await getAuctionById(id);
     return res.status(200).json({
       success: true,
-      message: "Auction fetched successfully",
-      data: auction,
+      message: "Auction details fetched successfully",
+      data: auction
     });
   } catch (error) {
     console.error("Error in getAuctionByIdController:", error);
     return res.status(404).json({
       success: false,
       message: error.message || "Auction not found",
-      data: null,
+      data: null
     });
   }
 };
 
 export const approveAuctionController = async (req, res) => {
   try {
-    const auction = await approveAuction(req.params.id, req.user.id);
+    const { id } = req.params;
+    const managerId = req.user?.id; // Get the manager's ID from authenticated user (token payload uses `id`)
+    if (!managerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized: missing manager id",
+        data: null
+      });
+    }
+    const auction = await approveAuction(id, managerId);
     return res.status(200).json({
       success: true,
       message: "Auction approved successfully",
-      data: auction,
+      data: auction
     });
   } catch (error) {
     console.error("Error in approveAuctionController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const rejectAuctionController = async (req, res) => {
   try {
+    const { id } = req.params;
     const { reason } = req.body;
-    const auction = await rejectAuction(req.params.id, req.user.id, reason);
+    const managerId = req.user?.id;
+    
+    if (!managerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized: missing manager id",
+        data: null
+      });
+    }
+    
+    const auction = await rejectAuction(id, reason, managerId);
     return res.status(200).json({
       success: true,
       message: "Auction rejected successfully",
-      data: auction,
+      data: auction
     });
   } catch (error) {
     console.error("Error in rejectAuctionController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const getAuctionsOverviewController = async (req, res) => {
   try {
-    const overview = await getAuctionsOverview(req.user.id);
+    const managerId = req.user?.id;
+    
+    if (!managerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized: missing manager id",
+        data: null
+      });
+    }
+
+    const overview = await getAuctionsOverview(managerId);
     return res.status(200).json({
       success: true,
       message: "Auctions overview fetched successfully",
-      data: overview,
+      data: overview
     });
   } catch (error) {
     console.error("Error in getAuctionsOverviewController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -413,14 +454,14 @@ export const getAuctionAnalyticsController = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Auction analytics fetched successfully",
-      data: analytics,
+      data: analytics
     });
   } catch (error) {
     console.error("Error in getAuctionAnalyticsController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -433,14 +474,14 @@ export const getPendingPublishers = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Pending publishers fetched successfully",
-      data: publishers,
+      data: publishers
     });
   } catch (error) {
     console.error("Error in getPendingPublishers:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -451,14 +492,14 @@ export const getActivePublishers = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Active publishers fetched successfully",
-      data: publishers,
+      data: publishers
     });
   } catch (error) {
     console.error("Error in getActivePublishers:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
@@ -469,114 +510,121 @@ export const getBannedPublishers = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Banned publishers fetched successfully",
-      data: publishers,
+      data: publishers
     });
   } catch (error) {
     console.error("Error in getBannedPublishers:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const approvePublisherController = async (req, res) => {
   try {
-    const publisher = await approvePublisher(req.params.id, req.user.id);
+    const { id } = req.params;
+    const publisher = await approvePublisher(id, req.user.id);
     return res.status(200).json({
       success: true,
       message: "Publisher approved successfully",
-      data: publisher,
+      data: publisher
     });
   } catch (error) {
     console.error("Error in approvePublisherController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const rejectPublisherController = async (req, res) => {
   try {
+    const { id } = req.params;
     const { reason } = req.body;
-    const publisher = await rejectPublisher(req.params.id, req.user.id, reason);
+    const managerId = req.user.id;
+    const publisher = await rejectPublisher(id, reason, managerId);
     return res.status(200).json({
       success: true,
       message: "Publisher rejected successfully",
-      data: publisher,
+      data: publisher
     });
   } catch (error) {
     console.error("Error in rejectPublisherController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const banPublisherController = async (req, res) => {
   try {
+    const { id } = req.params;
     const { reason } = req.body;
-    const publisher = await banPublisher(req.params.id, req.user.id, reason);
+    const managerId = req.user.id;
+    const publisher = await banPublisher(id, reason, managerId);
     return res.status(200).json({
       success: true,
       message: "Publisher banned successfully",
-      data: publisher,
+      data: publisher
     });
   } catch (error) {
     console.error("Error in banPublisherController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
 export const reinstatePublisherController = async (req, res) => {
   try {
-    const publisher = await reinstatePublisher(req.params.id, req.user.id);
+    const { id } = req.params;
+    const publisher = await reinstatePublisher(id);
     return res.status(200).json({
       success: true,
       message: "Publisher reinstated successfully",
-      data: publisher,
+      data: publisher
     });
   } catch (error) {
     console.error("Error in reinstatePublisherController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };
 
+// Publisher details (for manager overview)
 export const getPublisherByIdController = async (req, res) => {
   try {
-    const publisher = await getPublisherDetails(req.params.id);
+    const { id } = req.params;
+    const publisher = await getPublisherDetails(id);
     if (!publisher) {
       return res.status(404).json({
         success: false,
         message: "Publisher not found",
-        data: null,
+        data: null
       });
     }
-
     return res.status(200).json({
       success: true,
-      message: "Publisher fetched successfully",
-      data: publisher,
+      message: "Publisher details fetched successfully",
+      data: publisher
     });
   } catch (error) {
     console.error("Error in getPublisherByIdController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      data: null,
+      data: null
     });
   }
 };

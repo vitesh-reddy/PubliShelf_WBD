@@ -27,50 +27,50 @@ import {
   rejectPublisherController,
   banPublisherController,
   reinstatePublisherController,
-  getPublisherByIdController,
+  getPublisherByIdController
 } from "../controllers/manager.controller.js";
 
 const router = express.Router();
 
 // Public route for manager signup
-router.post("/manager/signup", createManagerSignup);
+router.post("/signup", createManagerSignup);
 
 // Protected routes - require authentication and manager role
 router.use(protect);
 router.use(authorize("manager"));
 
 // Profile routes
-router.get("/manager/dashboard", getManagerDashboard);
-router.get("/manager/profile", getManagerProfile);
-router.put("/manager/profile", updateManagerProfileController);
+router.get("/dashboard", getManagerDashboard);
+router.get("/profile", getManagerProfile);
+router.put("/profile", updateManagerProfileController);
 
 // Book management routes - temporarily disabled
 /**
-router.get("/manager/books/pending", getPendingBooks);
-router.get("/manager/books/approved", getApprovedBooks);
-router.get("/manager/books/rejected", getRejectedBooks);
-router.put("/manager/books/:id/approve", approveBookController);
-router.put("/manager/books/:id/reject", rejectBookController);
-router.put("/manager/books/:id/flag", flagBookController);
+router.get("/books/pending", getPendingBooks);
+router.get("/books/approved", getApprovedBooks);
+router.get("/books/rejected", getRejectedBooks);
+router.put("/books/:id/approve", approveBookController);
+router.put("/books/:id/reject", rejectBookController);
+router.put("/books/:id/flag", flagBookController);
 **/
 
 // Auction management routes
-router.get("/manager/auctions/overview", getAuctionsOverviewController);
-router.get("/manager/auctions/pending", getPendingAuctions);
-router.get("/manager/auctions/approved", getApprovedAuctions);
-router.get("/manager/auctions/rejected", getRejectedAuctions);
-router.get("/manager/auctions/:id", getAuctionByIdController);
-router.put("/manager/auctions/:id/approve", approveAuctionController);
-router.put("/manager/auctions/:id/reject", rejectAuctionController);
+router.get("/auctions/overview", getAuctionsOverviewController);
+router.get("/auctions/pending", getPendingAuctions);
+router.get("/auctions/approved", getApprovedAuctions);
+router.get("/auctions/rejected", getRejectedAuctions);
+router.get("/auctions/:id", getAuctionByIdController);
+router.put("/auctions/:id/approve", approveAuctionController);
+router.put("/auctions/:id/reject", rejectAuctionController);
 
 // Publisher management routes
-router.get("/manager/publishers/pending", getPendingPublishers);
-router.get("/manager/publishers/active", getActivePublishers);
-router.get("/manager/publishers/banned", getBannedPublishers);
-router.get("/manager/publishers/:id", getPublisherByIdController);
-router.put("/manager/publishers/:id/approve", approvePublisherController);
-router.put("/manager/publishers/:id/reject", rejectPublisherController);
-router.put("/manager/publishers/:id/ban", banPublisherController);
-router.put("/manager/publishers/:id/reinstate", reinstatePublisherController);
+router.get("/publishers/pending", getPendingPublishers);
+router.get("/publishers/active", getActivePublishers);
+router.get("/publishers/banned", getBannedPublishers);
+router.get("/publishers/:id", getPublisherByIdController);
+router.put("/publishers/:id/approve", approvePublisherController);
+router.put("/publishers/:id/reject", rejectPublisherController);
+router.put("/publishers/:id/ban", banPublisherController);
+router.put("/publishers/:id/reinstate", reinstatePublisherController);
 
 export default router;

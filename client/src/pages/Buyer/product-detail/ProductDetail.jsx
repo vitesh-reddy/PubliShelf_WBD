@@ -9,46 +9,63 @@ import { addToWishlistThunk, removeFromWishlistThunk } from '../../../store/slic
 import { useCart, useWishlist } from '../../../store/hooks';
 import StarRating from "../components/StarRating.jsx";
 
-// Skeleton components
 const SkeletonDetail = () => (
-  <div className="animate-fade-in flex flex-col md:flex-row gap-8 p-8 bg-white rounded-xl shadow-lg skeleton-shimmer">
-    <div className="w-full md:w-1/2 h-[600px] bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
-    <div className="flex-1 space-y-4">
-      <div className="h-8 w-3/4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
-      <div className="h-6 w-1/2 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
-      <div className="h-6 w-1/4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
-      <div className="h-6 w-1/3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mt-4"></div>
-      <div className="h-12 w-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mt-2"></div>
-      <div className="flex space-x-4">
-        <div className="h-12 w-1/2 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
-        <div className="h-12 w-1/2 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+  <div className="bg-white rounded-xl shadow-lg overflow-hidden p-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="space-y-4">
+        <div className="w-[500px] h-[600px] rounded-lg bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
       </div>
-      <div className="h-40 w-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mt-4"></div>
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="h-8 w-3/4 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+          <div className="h-6 w-1/2 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+          <div className="h-5 w-1/3 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+        </div>
+        <div className="space-y-2 border-t border-gray-200 pt-4">
+          <div className="h-5 w-40 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+          <div className="h-5 w-32 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+          <div className="h-5 w-32 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+        </div>
+        <div className="border-t border-b border-gray-200 py-4">
+          <div className="h-10 w-32 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+        </div>
+        <div className="space-y-4">
+          <div className="h-12 w-full rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-12 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+            <div className="h-12 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <div className="h-6 w-32 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+          <div className="h-24 w-full rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+        </div>
+      </div>
     </div>
   </div>
 );
 
 const SkeletonReview = () => (
-  <div className="animate-fade-in flex items-start gap-4 p-6 bg-white rounded-xl shadow-lg skeleton-shimmer mb-6">
-    <div className="w-12 h-12 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full"></div>
+  <div className="flex items-start gap-4 p-6 bg-white rounded-xl shadow-lg mb-6">
+    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
     <div className="flex-1 space-y-2">
-      <div className="h-4 w-1/3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
-      <div className="h-3 w-1/4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
-      <div className="h-6 w-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+      <div className="h-4 w-1/3 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+      <div className="h-3 w-1/4 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+      <div className="h-6 w-full rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
     </div>
   </div>
 );
 
 const SkeletonCard = () => (
-  <div className="bg-white rounded-xl shadow-md overflow-hidden skeleton-shimmer animate-fade-in">
+  <div className="bg-white rounded-xl shadow-md overflow-hidden">
     <div className="w-full h-40 md:h-64 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
     <div className="p-4 space-y-3">
-      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4" />
-      <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2" />
+      <div className="h-4 w-3/4 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+      <div className="h-3 w-1/2 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
       <div className="flex justify-between items-center pt-2">
         <div className="space-y-2">
-          <div className="h-4 w-16 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
-          <div className="h-3 w-20 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+          <div className="h-4 w-16 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+          <div className="h-3 w-20 rounded bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
         </div>
         <div className="h-7 w-7 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
       </div>
@@ -59,17 +76,18 @@ const SkeletonCard = () => (
 const ProductDetail = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
-  const { items: cartItems } = useCart();
+  const { items: cartItems, isAdding: isCartAdding } = useCart();
   const { items: wishlistItems, isAdding: isWishlistAdding, isRemoving: isWishlistRemoving } = useWishlist();
-  
+
   const [book, setBook] = useState(null);
   const [similarBooks, setSimilarBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  
+
   const isInCart = cartItems.some(item => item.book?._id === id);
   const isInWishlist = wishlistItems.some(item => item._id === id);
+  const isAddingToCart = isCartAdding(id);
 
   useEffect(() => {
     const run = async () => {
@@ -92,10 +110,6 @@ const ProductDetail = () => {
   }, [id]);
 
   const handleAddToCart = () => {
-    if (book.quantity <= 0) {
-      toast.error("This book is out of stock!");
-      return;
-    }
     if (isInCart) {
       toast.info("Book is already in your cart!");
       return;
@@ -104,6 +118,23 @@ const ProductDetail = () => {
       .unwrap()
       .then(() => toast.success('Book added to cart successfully!'))
       .catch((e) => toast.error(typeof e === 'string' ? e : 'Error adding to cart'));
+  };
+
+  const handleBuyNow = async () => {
+    // If already in cart, redirect directly
+    if (isInCart) {
+      navigate('/buyer/cart');
+      return;
+    }
+
+    // Add to cart first, then redirect
+    try {
+      await dispatch(addToCartThunk({ bookId: id, quantity: 1, book })).unwrap();
+      toast.success('Book added to cart!');
+      navigate('/buyer/cart');
+    } catch (e) {
+      toast.error(typeof e === 'string' ? e : 'Error adding to cart');
+    }
   };
 
   const handleToggleWishlist = (targetBook) => {
@@ -127,16 +158,34 @@ const ProductDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center space-y-8 p-4">
-        <SkeletonDetail />
-        <div className="w-full max-w-7xl">
-          <h3 className="text-2xl font-bold mb-4">Customer Reviews</h3>
-          {Array.from({ length: 3 }).map((_, idx) => <SkeletonReview key={`rev-${idx}`} />)}
-        </div>
-        <div className="w-full max-w-7xl">
-          <h3 className="text-2xl font-bold mb-4">You May Also Like</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {Array.from({ length: 4 }).map((_, idx) => <SkeletonCard key={`sim-${idx}`} />)}
+      <div className="min-h-screen flex flex-col items-center space-y-12 pt-20">
+        <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <nav className="flex mb-8" aria-label="Breadcrumb">            
+            <ol className="inline-flex items-center space-x-1 md:space-x-3">
+              <li className="inline-flex items-center">
+                <Link to="/buyer/dashboard" className="text-gray-700 hover:text-purple-600">
+                  <i className="fas fa-home mr-2"></i>
+                  Home
+                </Link>
+              </li>              
+              <li className="inline-flex items-center text-gray-400">
+                <i className="fas fa-chevron-right text-gray-400 mx-2"></i> Loading…
+              </li>
+            </ol>
+          </nav>
+
+          <SkeletonDetail />
+
+          <div className="mt-12">
+            <h3 className="text-2xl font-bold mb-6">Customer Reviews</h3>
+            {[1,2,3].map(i => <SkeletonReview key={i} />)}
+          </div>
+
+          <div className="mt-12">
+            <h3 className="text-2xl font-bold mb-6">You May Also Like</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {[1,2,3,4].map(i => <SkeletonCard key={i} />)}
+            </div>
           </div>
         </div>
       </div>
@@ -148,10 +197,8 @@ const ProductDetail = () => {
 
   return (
     <div className="flex flex-col min-h-screen product-detail-page bg-gray-50">
-
       <div className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Breadcrumb */}
           <nav className="flex mb-8" aria-label="Breadcrumb">
             <ol className="inline-flex items-center space-x-1 md:space-x-3">
               <li className="inline-flex items-center">
@@ -169,10 +216,8 @@ const ProductDetail = () => {
             </ol>
           </nav>
 
-          {/* Product Details */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
-              {/* Image */}
               <div className="space-y-4">
                 <div className="w-[500px] h-[600px] rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                   <img
@@ -183,7 +228,6 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Info */}
               <div className="space-y-6">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">{book.title}</h1>
@@ -230,12 +274,20 @@ const ProductDetail = () => {
                 <div className="space-y-4">
                   <div className="flex items-center space-x-4">
                     {book.quantity > 0 ? (
-                      <Link
-                        to="/buyer/cart"
-                        className="flex flex-1 justify-center bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
+                      <button
+                        onClick={handleBuyNow}
+                        disabled={isAddingToCart}
+                        className="flex flex-1 justify-center bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <p className="text-white"> Buy Now </p>
-                      </Link>
+                        {isAddingToCart ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin mr-2"></i>
+                            <span>Processing...</span>
+                          </>
+                        ) : (
+                          <span>Buy Now</span>
+                        )}
+                      </button>
                     ) : (
                       <button
                         disabled
@@ -268,10 +320,20 @@ const ProductDetail = () => {
                         <button
                           id="addToCartBtn"
                           onClick={handleAddToCart}
-                          className="absolute w-full flex items-center justify-center space-x-2 border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 transition-colors"
+                          disabled={isAddingToCart}
+                          className="absolute w-full flex items-center justify-center space-x-2 border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <i className="fas fa-shopping-cart" ></i>
-                          <span>Add to Cart</span>
+                          {isAddingToCart ? (
+                            <>
+                              <i className="fas fa-spinner fa-spin"></i>
+                              <span>Adding...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-shopping-cart"></i>
+                              <span>Add to Cart</span>
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
@@ -306,7 +368,6 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Reviews */}
           <div className="mt-12">
             <h3 className="text-2xl font-bold mb-6">Customer Reviews</h3>
             {book.reviews.length > 0 ? (
@@ -338,7 +399,6 @@ const ProductDetail = () => {
             )}
           </div>
 
-          {/* Similar Books */}
           <div className="mt-12">
             <h3 className="text-2xl font-bold mb-6">You May Also Like</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

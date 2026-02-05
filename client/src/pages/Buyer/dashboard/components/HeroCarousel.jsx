@@ -75,7 +75,7 @@ const HeroCarousel = ({ auctions = [], featuredBooks = [] }) => {
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
 
       {/* Content */}
-      <div className="relative h-full flex items-center px-24">
+      <div className="relative h-full flex items-center px-8 md:px-24">
         <div className="flex-1 max-w-2xl space-y-6 animate-fade-in">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">

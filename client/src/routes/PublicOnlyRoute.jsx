@@ -1,39 +1,20 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../store/hooks';
 import { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { setAuth, clearAuth } from '../store/slices/authSlice';
-import { getCurrentUser } from '../services/auth.services';
+import verifyAuth from '../utils/verifyAuth.util';
 
 const PublicOnlyRoute = () => {
   const { isAuthenticated, role } = useAuth();
-  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        const response = await getCurrentUser();
-        
-        if (response && response.success && response.data && response.data.user) {
-          dispatch(setAuth({ isAuthenticated: true, role: response.data.user.role }));
-        } else {
-          dispatch(clearAuth());
-        }
-      } catch (error) {
-        console.error('Failed to verify auth:', error);
-        dispatch(clearAuth());
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (!isAuthenticated) {
-      verifyAuth();
-    } else {
+    const hydrateAuth = async () => {
+      if (!isAuthenticated)
+        await verifyAuth();
       setIsLoading(false);
-    }
-  }, [isAuthenticated, dispatch]);
+    };
+    hydrateAuth();
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (

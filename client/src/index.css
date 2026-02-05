@@ -1,5 +1,176 @@
 @import "tailwindcss";
 
+/* ============================================
+   THEME SYSTEM - OCEAN THEME (DEFAULT)
+   Cyan brand colors with warm neutrals
+============================================ */
+
+:root,
+:root[data-theme="ocean"] {
+  /* ----------------------------------------------------
+     CYAN BRAND
+  ---------------------------------------------------- */
+  --color-cyanbrand-50:  #eef7fb;
+  --color-cyanbrand-100: #d9ecf4;
+  --color-cyanbrand-200: #b9dbea;
+  --color-cyanbrand-300: #96c7da;
+  --color-cyanbrand-400: #6baac4;
+  --color-cyanbrand-500: #4f8ca8;
+  --color-cyanbrand-600: #385460;
+  --color-cyanbrand-700: #304a55;
+  --color-cyanbrand-800: #263a42;
+  --color-cyanbrand-900: #1c2c33;
+
+  /* ----------------------------------------------------
+     ACCENTS
+  ---------------------------------------------------- */
+  --color-accent-orange: #cf4b00;
+  --color-accent-gold:   #ddba7d;
+  --color-background-cream: #fcf6d9;
+
+  /* ----------------------------------------------------
+     WARM NEUTRAL BACKGROUND + TEXT
+  ---------------------------------------------------- */
+  --color-neutral-50:   #fdfbf8;
+  --color-neutral-100:  #f7f3ee;
+  --color-neutral-200:  #ece5dc;
+  --color-neutral-300:  #dcd3c5;
+  --color-neutral-400:  #b9a99b;
+  --color-neutral-500:  #8a7b70;
+  --color-neutral-600:  #6d6057;
+  --color-neutral-700:  #544942;
+  --color-neutral-800:  #3d3531;
+  --color-neutral-900:  #292523;
+
+  /* ----------------------------------------------------
+     TAILWIND OVERRIDES
+  ---------------------------------------------------- */
+  /* PURPLE → CYANBRAND */
+  --color-purple-50:  var(--color-cyanbrand-50);
+  --color-purple-100: var(--color-cyanbrand-100);
+  --color-purple-200: var(--color-cyanbrand-200);
+  --color-purple-300: var(--color-cyanbrand-300);
+  --color-purple-400: var(--color-cyanbrand-400);
+  --color-purple-500: var(--color-cyanbrand-500);
+  --color-purple-600: var(--color-cyanbrand-600);
+  --color-purple-700: var(--color-cyanbrand-700);
+  --color-purple-800: var(--color-cyanbrand-800);
+  --color-purple-900: var(--color-cyanbrand-900);
+
+  /* INDIGO → CYANBRAND */
+  --color-indigo-50:  var(--color-cyanbrand-50);
+  --color-indigo-100: var(--color-cyanbrand-100);
+  --color-indigo-200: var(--color-cyanbrand-200);
+  --color-indigo-300: var(--color-cyanbrand-300);
+  --color-indigo-400: var(--color-cyanbrand-400);
+  --color-indigo-500: var(--color-cyanbrand-500);
+  --color-indigo-600: var(--color-cyanbrand-600);
+  --color-indigo-700: var(--color-cyanbrand-700);
+  --color-indigo-800: var(--color-cyanbrand-800);
+  --color-indigo-900: var(--color-cyanbrand-900);
+
+  /* GRAY → WARM NEUTRALS */
+  --color-gray-50:  var(--color-neutral-50);
+  --color-gray-100: var(--color-neutral-100);
+  --color-gray-200: var(--color-neutral-200);
+  --color-gray-300: var(--color-neutral-300);
+  --color-gray-400: var(--color-neutral-400);
+  --color-gray-500: var(--color-neutral-500);
+  --color-gray-600: var(--color-neutral-600);
+  --color-gray-700: var(--color-neutral-700);
+  --color-gray-800: var(--color-neutral-800);
+  --color-gray-900: var(--color-neutral-900);
+}
+
+/* ============================================
+   VIOLET THEME
+   Purple brand colors with cool gray neutrals
+============================================ */
+
+:root[data-theme="violet"] {
+  /* ----------------------------------------------------
+     PURPLE BRAND
+  ---------------------------------------------------- */
+  --color-cyanbrand-50:  #f5f3ff;
+  --color-cyanbrand-100: #ede9fe;
+  --color-cyanbrand-200: #ddd6fe;
+  --color-cyanbrand-300: #c4b5fd;
+  --color-cyanbrand-400: #a78bfa;
+  --color-cyanbrand-500: #8b5cf6;
+  --color-cyanbrand-600: #7c3aed;
+  --color-cyanbrand-700: #6d28d9;
+  --color-cyanbrand-800: #5b21b6;
+  --color-cyanbrand-900: #4c1d95;
+
+  /* ----------------------------------------------------
+     ACCENTS
+  ---------------------------------------------------- */
+  --color-accent-orange: #f97316;
+  --color-accent-gold:   #fbbf24;
+  --color-background-cream: #fef3c7;
+
+  /* ----------------------------------------------------
+     COOL GRAY NEUTRALS
+  ---------------------------------------------------- */
+  --color-neutral-50:   #f9fafb;
+  --color-neutral-100:  #f3f4f6;
+  --color-neutral-200:  #e5e7eb;
+  --color-neutral-300:  #d1d5db;
+  --color-neutral-400:  #9ca3af;
+  --color-neutral-500:  #6b7280;
+  --color-neutral-600:  #4b5563;
+  --color-neutral-700:  #374151;
+  --color-neutral-800:  #1f2937;
+  --color-neutral-900:  #111827;
+
+  /* ----------------------------------------------------
+     TAILWIND OVERRIDES
+  ---------------------------------------------------- */
+  /* PURPLE → PURPLE BRAND */
+  --color-purple-50:  #f5f3ff;
+  --color-purple-100: #ede9fe;
+  --color-purple-200: #ddd6fe;
+  --color-purple-300: #c4b5fd;
+  --color-purple-400: #a78bfa;
+  --color-purple-500: #8b5cf6;
+  --color-purple-600: #7c3aed;
+  --color-purple-700: #6d28d9;
+  --color-purple-800: #5b21b6;
+  --color-purple-900: #4c1d95;
+
+  /* INDIGO → INDIGO COLORS */
+  --color-indigo-50:  #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-300: #a5b4fc;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-800: #3730a3;
+  --color-indigo-900: #312e81;
+
+  /* GRAY → COOL NEUTRALS */
+  --color-gray-50:  #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+}
+
+/* ============================================
+   ADD MORE THEMES HERE IN THE FUTURE
+   Example: :root[data-theme="forest"] { ... }
+            :root[data-theme="sunset"] { ... }
+============================================ */
+
+
+
 * {
   scrollbar-width: none !important; 
 }
@@ -35,6 +206,17 @@ input:focus {
   }
 }
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.8s ease-out forwards;
 }
@@ -47,6 +229,10 @@ input:focus {
 .animate-fade-in-delay-2 {
   animation: fadeIn 0.8s ease-out 0.4s forwards;
   opacity: 0;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.2s ease-out forwards;
 }
 
 /* Skeleton Shimmer Animation */

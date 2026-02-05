@@ -3,6 +3,7 @@ import Admin from "../models/Admin.model.js";
 import Publisher from "../models/Publisher.model.js";
 import Manager from "../models/Manager.model.js";
 import jwt from "jsonwebtoken";
+import { getCookieOptions } from "../config/cookie.js";
 import { getAllPublishers, deletePublisherById, togglePublisherBan } from "../services/publisher.services.js";
 import { getAllBuyers, getAllOrders } from "../services/buyer.services.js";
 import Order from "../models/Order.model.js";
@@ -51,15 +52,10 @@ export const loginAdmin = async (req, res) => {
         isSuperAdmin: authenticatedAdmin.isSuperAdmin
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: process.env.JWT_EXPIRES_IN || "1d" }
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    res.cookie("token", token, getCookieOptions());
 
     return res.status(200).json({
       success: true,

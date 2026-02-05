@@ -1,5 +1,5 @@
 // src/components/ToastProvider.jsx
-import { Toaster } from 'sonner'
+import { Toaster } from "sonner"
 
 export default () => {
   return (
@@ -10,52 +10,69 @@ export default () => {
         duration: 3000,
         style: {
           width: "clamp(300px, max-content, 400px)",
-          maxWidth: "90vw",
-          padding: "0.9rem 1rem",
-          borderRadius: "14px",
-          background: "rgba(255,255,255,0)",
-          color: "#111",
+          padding: "1rem 1.2rem",
+          borderRadius: "18px",
+          background: "rgba(0, 0, 0, 0)",
+          backdropFilter: "blur(2px) saturate(180%)",
+          WebkitBackdropFilter: "blur(2px) saturate(180%)",
+          border: "1px solid rgba(255, 255, 255, 0.22)",
+          boxShadow: `
+            inset 0 1px 0 rgba(255,255,255,0.35),
+            inset 0 -1px 6px rgba(255,255,255,0.06),
+            0 10px 28px rgba(0,0,0,0.35)
+          `,
+
+          color: "black",
           fontSize: "17px",
-          boxShadow: "0 8px 25px rgba(0,0,0,0.25)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.18)",
+          fontWeight: 500,
+          textShadow: "0 0.3px 0.4px rgba(0,0,0,0.18)",
           display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
         },
         success: {
           style: {
-            width: "clamp(300px, max-content, 400px)",
-            borderRadius: "14px",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0)",
-            background: "rgba(16,185,129,0.14)",
-            color: "#fff",
+            borderRadius: "18px",
+            background: "rgba(75, 192, 148, 0)",
+
+            backdropFilter: "blur(2px) saturate(180%)",
+            WebkitBackdropFilter: "blur(2px) saturate(180%)",
+
+            border: "1px solid rgba(255,255,255,0.22)",
+            boxShadow: `
+              inset 0 1px 0 rgba(255,255,255,0.4),
+              inset 0 -1px 6px rgba(255,255,255,0.06),
+              0 10px 28px rgba(0,0,0,0.35)
+            `,
+            color: "black",
+            textShadow: "0 0.3px 0.4px rgba(0,0,0,0.18)",
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
           },
         },
+
         error: {
           style: {
-            width: "clamp(300px, max-content, 400px)",
-            borderRadius: "14px",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0)",
-            background: "rgba(244,63,94,0.15)",
-            color: "#fff",
+            borderRadius: "18px",
+            background: "rgba(207, 75, 0, 0)",
+
+            backdropFilter: "blur(2px) saturate(180%)",
+            WebkitBackdropFilter: "blur(2px) saturate(180%)",
+
+            border: "1px solid rgba(255,255,255,0.22)",
+            boxShadow: `
+              inset 0 1px 0 rgba(255,255,255,0.4),
+              inset 0 -1px 6px rgba(255,255,255,0.06),
+              0 10px 28px rgba(0,0,0,0.35)
+            `,
+            color: "black",
+            textShadow: "0 0.3px 0.4px rgba(0,0,0,0.18)",
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
           },
         },
       }}
     />
-  )
-}
+  );
+};

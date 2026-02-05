@@ -186,7 +186,7 @@ const ActiveBooks = () => {
 
                     {/* Hover Actions */}
                     <div
-                      className={`absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 backdrop-blur-sm transition-opacity duration-200 cursor-pointer ${
+                      className={`absolute inset-0 flex flex-col items-center justify-center gap-3 bg hover:backdrop-blur-xs transition-all duration-200 cursor-pointer ${
                         hoveredBookId === book._id
                           ? "opacity-100"
                           : "opacity-0 pointer-events-none"

@@ -197,8 +197,19 @@ const SellAntique = () => {
   const onSubmit = async () => {
     if (!extraSubmitChecks()) { window.scrollTo({ top:0, behavior:'smooth'}); return; }
     const submitData = new FormData();
-    const { authenticationImages, itemImage, ...rest } = formData;
+    const { authenticationImages, itemImage, auctionStart, auctionEnd, ...rest } = formData;
+    
     Object.entries(rest).forEach(([k,v]) => { if (v !== null && v !== undefined) submitData.append(k, v); });
+    
+    if (auctionStart) {
+      const startDate = new Date(auctionStart);
+      submitData.append('auctionStart', startDate.toISOString());
+    }
+    if (auctionEnd) {
+      const endDate = new Date(auctionEnd);
+      submitData.append('auctionEnd', endDate.toISOString());
+    }
+    
     if (itemImage) submitData.append('itemImage', itemImage);
     (authenticationImages||[]).forEach(f => submitData.append('authenticationImages', f));
     try {

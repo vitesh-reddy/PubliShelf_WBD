@@ -2,31 +2,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  placeOrder,
-  getBuyerAddresses,
-  addBuyerAddress,
-  updateBuyerAddress,
-  deleteBuyerAddress,
-} from "../../../services/buyer.services.js";
-// Navbar and Footer are provided by BuyerLayout
+import { placeOrder, getBuyerAddresses, addBuyerAddress, updateBuyerAddress, deleteBuyerAddress } from "../../../services/buyer.services.js";
 import { useCart } from "../../../store/hooks";
 import { clearCart } from "../../../store/slices/cartSlice.js";
 import { useDispatch } from "react-redux";
 import { useForm } from "react-hook-form";
-
-import {
-  nameRules,
-  phoneRules,
-  longAddressRules,
-  cityStateRules,
-  postalCodeRules,
-  cardNumberRules,
-  expiryRules,
-  cvvRules,
-  upiRules,
-  trimCheckoutPayload,
-} from "./checkoutValidations.js";
+import { nameRules, phoneRules, longAddressRules, cityStateRules, postalCodeRules, cardNumberRules, expiryRules, cvvRules, upiRules, trimCheckoutPayload } from "./checkoutValidations.js";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../components/ui/AlertDialog.jsx";
 
 const Checkout = () => {
   const { items: cartItems } = useCart();
@@ -51,9 +33,8 @@ const Checkout = () => {
 
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [showConfirmOrderDialog, setShowConfirmOrderDialog] = useState(false);
 
-  // ----------------- React Hook Form instances -----------------
-  // Address form (add / edit) - same schema used for add & edit
   const {
     register: addrRegister,
     handleSubmit: handleAddrSubmit,
@@ -62,7 +43,6 @@ const Checkout = () => {
     trigger: addrTrigger,
   } = useForm({ mode: "onBlur", defaultValues: { fullName: "", phoneNumber: "", address: "", city: "", state: "", postalCode: "" } });
 
-  // Card form
   const {
     register: cardRegister,
     handleSubmit: handleCardSubmit,
@@ -71,7 +51,6 @@ const Checkout = () => {
     trigger: cardTrigger,
   } = useForm({ mode: "onBlur", defaultValues: { cardNumber: "", expiryDate: "", cvv: "" } });
 
-  // UPI form
   const {
     register: upiRegister,
     handleSubmit: handleUpiSubmit,
@@ -80,7 +59,6 @@ const Checkout = () => {
     trigger: upiTrigger,
   } = useForm({ mode: "onBlur", defaultValues: { upiId: "" } });
 
-  // ----------------- Fetch addresses -----------------
   useEffect(() => {
     const fetchAddresses = async () => {
       setLoadingAddresses(true);
@@ -90,8 +68,8 @@ const Checkout = () => {
           setAddresses(res.addresses || []);
           if (res.addresses && res.addresses.length > 0) setSelectedAddress(res.addresses[0]._id);
         }
-      } catch /* ignore */ {
-        // preserve previous behavior (silent)
+      } catch{
+
       }
       setLoadingAddresses(false);
     };
@@ -278,8 +256,8 @@ const Checkout = () => {
     }
   };
 
-  // ----------------- PLACE ORDER (UNCHANGED LOGIC) -----------------
-  const handlePlaceOrder = async () => {
+  // ----------------- OPEN CONFIRM ORDER DIALOG -----------------
+  const openConfirmOrderDialog = () => {
     if (!selectedPayment) {
       toast.warning("Please select a payment method before placing your order.");
       return;
@@ -292,6 +270,12 @@ const Checkout = () => {
       toast.warning("Your cart is empty. Please add items before placing an order.");
       return;
     }
+    setShowConfirmOrderDialog(true);
+  };
+
+  // ----------------- PLACE ORDER -----------------
+  const handlePlaceOrder = async () => {
+    setShowConfirmOrderDialog(false);
 
     // Map UI selection to backend enums (identical to previous)
     let paymentMethod = "COD";
@@ -732,7 +716,7 @@ const Checkout = () => {
               <span>Total</span>
               <span>₹{orderSummary.total.toFixed(2)}</span>
             </div>
-            <button disabled={placingOrder} onClick={handlePlaceOrder} className="w-full p-3 bg-purple-600 disabled:bg-purple-400 disabled:cursor-not-allowed text-white border-none rounded-lg text-base font-medium cursor-pointer transition-all duration-300 ease-in-out hover:bg-purple-700 hover:-translate-y-0.5">
+            <button disabled={placingOrder} onClick={openConfirmOrderDialog} className="w-full p-3 bg-purple-600 disabled:bg-purple-400 disabled:cursor-not-allowed text-white border-none rounded-lg text-base font-medium cursor-pointer transition-all duration-300 ease-in-out hover:bg-purple-700 hover:-translate-y-0.5">
               {placingOrder ? "Placing" : "Place"} Your Order
             </button>
           </div>
@@ -752,6 +736,25 @@ const Checkout = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Order Dialog */}
+      <AlertDialog open={showConfirmOrderDialog} onOpenChange={setShowConfirmOrderDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Your Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to place this order for ₹{orderSummary.total.toFixed(2)}? <br/>
+              This action will process your payment and create the order.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePlaceOrder} disabled={placingOrder}>
+              {placingOrder ? "Placing Order..." : "Confirm Order"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );

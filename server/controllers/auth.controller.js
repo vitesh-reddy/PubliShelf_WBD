@@ -1,5 +1,6 @@
 //controllers/auth.controller.js
 import { loginUser } from "../services/auth.services.js";
+import { getCookieOptions } from "../config/cookie.js";
 
 export const loginPostController = async (req, res) => {
   try {
@@ -8,8 +9,6 @@ export const loginPostController = async (req, res) => {
     const result = await loginUser(email, password);
 
     if (result.code === 403) {
-      // If there's a specific message (banned, pending, rejected), use it
-      // Otherwise, it's a "user not found" case
       const message = result.message || "User not found";
       return res.status(403).json({
         success: false,
@@ -26,12 +25,7 @@ export const loginPostController = async (req, res) => {
       });
     }
 
-    res.cookie("token", result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
+    res.cookie("token", result.token, getCookieOptions());
 
     return res.status(200).json({
       success: true,
@@ -74,11 +68,7 @@ export const getMeController = async (req, res) => {
 
 export const logoutController = async (req, res) => {
   try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.clearCookie("token", getCookieOptions());
 
     return res.status(200).json({
       success: true,

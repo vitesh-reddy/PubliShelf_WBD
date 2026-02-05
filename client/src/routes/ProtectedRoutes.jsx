@@ -74,7 +74,8 @@ const ProtectedRoutes = () => (
 
     {/* Manager Routes */}
     <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
-      <Route path="/manager" element={<ManagerLayout />}>\n        <Route path="dashboard" element={<ManagerDashboard />} />
+      <Route path="/manager" element={<ManagerLayout />}>
+        <Route path="dashboard" element={<ManagerDashboard />} />
         <Route path="auctions" element={<AuctionsLayout />}>
           <Route index element={<Navigate to="/manager/auctions/pending" replace />} />
           <Route path="overview" element={<ManagerAuctionsOverview />} />

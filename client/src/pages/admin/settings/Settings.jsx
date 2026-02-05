@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
   getAllAdmins,
@@ -29,15 +30,62 @@ const Settings = () => {
   const [actionLoading, setActionLoading] = useState(false);
 
   const [showChangeKeyDialog, setShowChangeKeyDialog] = useState(false);
-  const [currentKey, setCurrentKey] = useState('');
-  const [newKey, setNewKey] = useState('');
-
   const [showCreateAdminDialog, setShowCreateAdminDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showChangeAdminKeyDialog, setShowChangeAdminKeyDialog] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
-  const [newAdminData, setNewAdminData] = useState({ name: '', email: '', adminKey: '' });
-  const [newAdminKeyInput, setNewAdminKeyInput] = useState('');
+  
+  const [createAdminError, setCreateAdminError] = useState('');
+  const [changeKeyError, setChangeKeyError] = useState('');
+  const [changeAdminKeyError, setChangeAdminKeyError] = useState('');
+
+  const adminNameRules = {
+    required: 'Name is required.',
+    validate: {
+      alphabetsOnly: v => /^[A-Za-z\s]+$/.test(v) || 'Name must contain only alphabets and spaces.',
+      noLeadingTrailingSpaces: v => v.trim() === v || 'Name cannot have leading or trailing spaces.',
+      notEmpty: v => v.trim().length > 0 || 'Name cannot be empty.'
+    }
+  };
+
+  const emailRules = {
+    required: 'Email is required.',
+    validate: {
+      validEmail: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Please enter a valid email address.',
+      lowercase: v => v === v.toLowerCase() || 'Email must be in lowercase.',
+      noSpaces: v => !/\s/.test(v) || 'Email cannot contain spaces.'
+    }
+  };
+
+  const adminKeyRules = {
+    required: 'Admin key is required.',
+    minLength: { value: 6, message: 'Admin key must be at least 6 digits.' },
+    validate: {
+      numbersOnly: v => /^\d+$/.test(v) || 'Admin key must contain only numbers.',
+      noSpaces: v => !/\s/.test(v) || 'Admin key cannot contain spaces.'
+    }
+  };
+
+  const {
+    register: registerChangeKey,
+    handleSubmit: handleSubmitChangeKey,
+    formState: { errors: errorsChangeKey },
+    reset: resetChangeKey
+  } = useForm({ mode: 'onBlur' });
+
+  const {
+    register: registerCreateAdmin,
+    handleSubmit: handleSubmitCreateAdmin,
+    formState: { errors: errorsCreateAdmin },
+    reset: resetCreateAdmin
+  } = useForm({ mode: 'onBlur' });
+
+  const {
+    register: registerChangeAdminKey,
+    handleSubmit: handleSubmitChangeAdminKey,
+    formState: { errors: errorsChangeAdminKey },
+    reset: resetChangeAdminKey
+  } = useForm({ mode: 'onBlur' });
 
   useEffect(() => {
     if (activeTab === 'team' && user?.isSuperAdmin) {
@@ -62,47 +110,44 @@ const Settings = () => {
     }
   };
 
-  const handleChangeKey = async () => {
-    if (!currentKey || !newKey) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-    if (newKey.length < 6) {
-      toast.error('New key must be at least 6 characters');
-      return;
-    }
+  const handleChangeKey = async (data) => {
+    setChangeKeyError('');
     try {
       setActionLoading(true);
-      await updateAdminKey(currentKey, newKey);
+      await updateAdminKey(data.currentKey.trim(), data.newKey.trim());
       toast.success('Admin key updated successfully! Please login again with your new key.');
       setShowChangeKeyDialog(false);
-      setCurrentKey('');
-      setNewKey('');
+      resetChangeKey();
+      setChangeKeyError('');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update admin key');
+      console.error('Change key error:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to update admin key';
+      setChangeKeyError(errorMessage);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleCreateAdmin = async () => {
-    if (!newAdminData.name || !newAdminData.email || !newAdminData.adminKey) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-    if (newAdminData.adminKey.length < 6) {
-      toast.error('Admin key must be at least 6 characters');
-      return;
-    }
+  const handleCreateAdmin = async (data) => {
+    setCreateAdminError('');
     try {
       setActionLoading(true);
-      await createAdmin(newAdminData);
+      const adminData = {
+        name: data.name.trim(),
+        email: data.email.trim().toLowerCase(),
+        adminKey: data.adminKey.trim()
+      };
+      console.log('Creating admin with data:', adminData);
+      await createAdmin(adminData);
       await fetchAdmins();
-      setShowCreateAdminDialog(false);
-      setNewAdminData({ name: '', email: '', adminKey: '' });
       toast.success('Admin created successfully!');
+      setShowCreateAdminDialog(false);
+      resetCreateAdmin();
+      setCreateAdminError('');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create admin');
+      console.error('Create admin error:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to create admin';
+      setCreateAdminError(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -117,35 +162,34 @@ const Settings = () => {
       setSelectedAdmin(null);
       toast.success('Admin deleted successfully!');
     } catch (err) {
+      console.error('Delete admin error:', err); // Added logging
       toast.error(err.response?.data?.message || 'Failed to delete admin');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleChangeAdminKey = async () => {
-    if (!newAdminKeyInput.trim()) {
-      toast.error('Please enter a new admin key');
-      return;
-    }
-    if (newAdminKeyInput.length < 6) {
-      toast.error('Admin key must be at least 6 characters');
-      return;
-    }
+  const handleChangeAdminKey = async (data) => {
+    setChangeAdminKeyError(''); // Clear previous errors
     try {
       setActionLoading(true);
-      await changeAdminKey(selectedAdmin._id, newAdminKeyInput);
+      console.log('Changing admin key for:', selectedAdmin._id, 'New key:', data.newAdminKey.trim());
+      await changeAdminKey(selectedAdmin._id, data.newAdminKey.trim());
       toast.success(`Admin key changed successfully for ${selectedAdmin.name}!`);
       setShowChangeAdminKeyDialog(false);
       setSelectedAdmin(null);
-      setNewAdminKeyInput('');
-      fetchAdmins(); // Refresh the list
+      resetChangeAdminKey();
+      setChangeAdminKeyError('');
+      await fetchAdmins();
     } catch (err) {
+      console.error('Change admin key error:', err);
+      let errorMessage;
       if (err.response?.status === 409) {
-        toast.error('This admin key is already in use by another admin. Please choose a different key.');
+        errorMessage = 'This admin key is already in use by another admin. Please choose a different key.';
       } else {
-        toast.error(err.response?.data?.message || 'Failed to change admin key');
+        errorMessage = err.response?.data?.message || 'Failed to change admin key';
       }
+      setChangeAdminKeyError(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -216,7 +260,10 @@ const Settings = () => {
                 <div className="border-t border-gray-200 pt-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-4">Security</h2>
                   <button
-                    onClick={() => setShowChangeKeyDialog(true)}
+                    onClick={() => {
+                      setChangeKeyError('');
+                      setShowChangeKeyDialog(true);
+                    }}
                     className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-sm"
                   >
                     <i className="fas fa-key mr-2"></i>
@@ -231,7 +278,10 @@ const Settings = () => {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold text-gray-900">Admin Team Management</h2>
                   <button
-                    onClick={() => setShowCreateAdminDialog(true)}
+                    onClick={() => {
+                      setCreateAdminError('');
+                      setShowCreateAdminDialog(true);
+                    }}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-sm"
                   >
                     <i className="fas fa-plus"></i>
@@ -289,6 +339,7 @@ const Settings = () => {
                             <button
                               onClick={() => {
                                 setSelectedAdmin(admin);
+                                setChangeAdminKeyError('');
                                 setShowChangeAdminKeyDialog(true);
                               }}
                               className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium"
@@ -317,6 +368,7 @@ const Settings = () => {
           </div>
         </div>
       
+      {/* Change Admin Key Dialog (Own Key) */}
       <AlertDialog open={showChangeKeyDialog} onOpenChange={setShowChangeKeyDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -325,37 +377,60 @@ const Settings = () => {
               Update your admin key for enhanced security. You'll need to login again after changing.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-4 my-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Current Admin Key</label>
-              <input
-                type="password"
-                value={currentKey}
-                onChange={(e) => setCurrentKey(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Enter current key"
-              />
+          <form onSubmit={handleSubmitChangeKey(handleChangeKey)}>
+            {changeKeyError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <div className="flex items-start gap-2">
+                  <i className="fas fa-exclamation-circle mt-0.5"></i>
+                  <p className="text-sm">{changeKeyError}</p>
+                </div>
+              </div>
+            )}
+            <div className="space-y-4 my-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Admin Key</label>
+                <input
+                  type="password"
+                  {...registerChangeKey('currentKey', adminKeyRules)}
+                  className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errorsChangeKey.currentKey ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter current key"
+                />
+                {errorsChangeKey.currentKey && (
+                  <p className="text-red-600 text-sm mt-1">{errorsChangeKey.currentKey.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">New Admin Key</label>
+                <input
+                  type="password"
+                  {...registerChangeKey('newKey', adminKeyRules)}
+                  className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errorsChangeKey.newKey ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter new key (min 6 digits)"
+                />
+                {errorsChangeKey.newKey && (
+                  <p className="text-red-600 text-sm mt-1">{errorsChangeKey.newKey.message}</p>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">New Admin Key</label>
-              <input
-                type="password"
-                value={newKey}
-                onChange={(e) => setNewKey(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Enter new key (min 6 characters)"
-              />
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setCurrentKey(''); setNewKey(''); }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleChangeKey} disabled={actionLoading} className="bg-purple-600 hover:bg-purple-700">
-              {actionLoading ? 'Updating...' : 'Update Key'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => resetChangeKey()}>Cancel</AlertDialogCancel>
+              <button
+                type="submit"
+                disabled={actionLoading}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {actionLoading ? 'Updating...' : 'Update Key'}
+              </button>
+            </AlertDialogFooter>
+          </form>
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Create Admin Dialog */}
       <AlertDialog open={showCreateAdminDialog} onOpenChange={setShowCreateAdminDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -364,47 +439,74 @@ const Settings = () => {
               Add a new admin to the team. They will receive access with the specified credentials.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-4 my-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-              <input
-                type="text"
-                value={newAdminData.name}
-                onChange={(e) => setNewAdminData({ ...newAdminData, name: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Enter name"
-              />
+          <form onSubmit={handleSubmitCreateAdmin(handleCreateAdmin)}>
+            {createAdminError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <div className="flex items-start gap-2">
+                  <i className="fas fa-exclamation-circle mt-0.5"></i>
+                  <p className="text-sm">{createAdminError}</p>
+                </div>
+              </div>
+            )}
+            <div className="space-y-4 my-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                <input
+                  type="text"
+                  {...registerCreateAdmin('name', adminNameRules)}
+                  className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errorsCreateAdmin.name ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter name (alphabets only)"
+                />
+                {errorsCreateAdmin.name && (
+                  <p className="text-red-600 text-sm mt-1">{errorsCreateAdmin.name.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  {...registerCreateAdmin('email', emailRules)}
+                  className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errorsCreateAdmin.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter email"
+                />
+                {errorsCreateAdmin.email && (
+                  <p className="text-red-600 text-sm mt-1">{errorsCreateAdmin.email.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Admin Key</label>
+                <input
+                  type="password"
+                  {...registerCreateAdmin('adminKey', adminKeyRules)}
+                  className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errorsCreateAdmin.adminKey ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Set admin key (min 6 digits)"
+                />
+                {errorsCreateAdmin.adminKey && (
+                  <p className="text-red-600 text-sm mt-1">{errorsCreateAdmin.adminKey.message}</p>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <input
-                type="email"
-                value={newAdminData.email}
-                onChange={(e) => setNewAdminData({ ...newAdminData, email: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Enter email"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Admin Key</label>
-              <input
-                type="password"
-                value={newAdminData.adminKey}
-                onChange={(e) => setNewAdminData({ ...newAdminData, adminKey: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Set admin key (min 6 characters)"
-              />
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setNewAdminData({ name: '', email: '', adminKey: '' })}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCreateAdmin} disabled={actionLoading} className="bg-purple-600 hover:bg-purple-700">
-              {actionLoading ? 'Creating...' : 'Create Admin'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => resetCreateAdmin()}>Cancel</AlertDialogCancel>
+              <button
+                type="submit"
+                disabled={actionLoading}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {actionLoading ? 'Creating...' : 'Create Admin'}
+              </button>
+            </AlertDialogFooter>
+          </form>
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete Admin Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -422,30 +524,49 @@ const Settings = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Change Admin Key Dialog (For Other Admins) */}
       <AlertDialog open={showChangeAdminKeyDialog} onOpenChange={setShowChangeAdminKeyDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Change Admin Key</AlertDialogTitle>
             <AlertDialogDescription>
-              Set a new admin key for <strong>{selectedAdmin?.name}</strong>. The key must be unique and at least 6 characters long.
+              Set a new admin key for <strong>{selectedAdmin?.name}</strong>. The key must be unique and at least 6 digits long.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="my-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">New Admin Key</label>
-            <input
-              type="text"
-              value={newAdminKeyInput}
-              onChange={(e) => setNewAdminKeyInput(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="Enter new admin key (min 6 characters)"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setSelectedAdmin(null); setNewAdminKeyInput(''); }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleChangeAdminKey} disabled={actionLoading} className="bg-purple-600 hover:bg-purple-700">
-              {actionLoading ? 'Changing...' : 'Change Key'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          <form onSubmit={handleSubmitChangeAdminKey(handleChangeAdminKey)}>
+            {changeAdminKeyError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <div className="flex items-start gap-2">
+                  <i className="fas fa-exclamation-circle mt-0.5"></i>
+                  <p className="text-sm">{changeAdminKeyError}</p>
+                </div>
+              </div>
+            )}
+            <div className="my-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">New Admin Key</label>
+              <input
+                type="password"
+                {...registerChangeAdminKey('newAdminKey', adminKeyRules)}
+                className={`w-full border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  errorsChangeAdminKey.newAdminKey ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter new admin key (min 6 digits)"
+              />
+              {errorsChangeAdminKey.newAdminKey && (
+                <p className="text-red-600 text-sm mt-1">{errorsChangeAdminKey.newAdminKey.message}</p>
+              )}
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => { setSelectedAdmin(null); resetChangeAdminKey(); }}>Cancel</AlertDialogCancel>
+              <button
+                type="submit"
+                disabled={actionLoading}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {actionLoading ? 'Changing...' : 'Change Key'}
+              </button>
+            </AlertDialogFooter>
+          </form>
         </AlertDialogContent>
       </AlertDialog>
     </div>

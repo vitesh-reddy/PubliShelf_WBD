@@ -95,6 +95,33 @@ const AuctionItemDetail = () => {
 
   const status = getAuctionStatus();
 
+  const buildMediaList = (bk) => {
+    if (!bk) return [];
+    const urls = [];
+    if (bk.image) urls.push(bk.image);
+    if (Array.isArray(bk.authenticationImages)) urls.push(...bk.authenticationImages);
+    if (bk.authenticationImage) urls.push(bk.authenticationImage);
+    if (Array.isArray(bk.files)) urls.push(...bk.files); // forward-compat if backend adds files
+
+    const deduped = Array.from(new Set(urls.filter(Boolean)));
+    const getType = (u) => {
+      const ext = (u.split('?')[0].split('#')[0].split('.').pop() || '').toLowerCase();
+      if (["jpg","jpeg","png","webp","gif","svg","bmp","avif"].includes(ext)) return 'image';
+      if (["mp4","webm","ogg","mov","m4v"].includes(ext)) return 'video';
+      if (ext === 'pdf') return 'pdf';
+      return 'file';
+    };
+    return deduped.map((u) => ({ url: u, type: getType(u) }));
+  };
+
+  const [activeMediaIdx, setActiveMediaIdx] = useState(0);
+
+  const media = buildMediaList(book);
+
+  useEffect(() => {
+    setActiveMediaIdx(0);
+  }, [id, book?._id]);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       
@@ -133,15 +160,84 @@ const AuctionItemDetail = () => {
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
                 
-                {/* Left — Image */}
+                {/* Left — Media Gallery */}
                 <div className="space-y-4">
-                  <div className="rounded-lg overflow-hidden">
-                    <img
-                      src={book.image}
-                      alt={book.title}
-                      className="mx-auto w-[70%] h-[500px] object-contain transform transition-transform duration-500 hover:scale-101"
-                    />
+                  <div className="rounded-lg overflow-hidden flex items-center justify-center bg-gray-50">
+                    {media.length > 0 && media[activeMediaIdx]?.type === 'image' && (
+                      <img
+                        src={media[activeMediaIdx].url}
+                        alt={book.title}
+                        className="mx-auto w-[60%] h-[500px] object-contain transform transition-transform duration-500 hover:scale-101"
+                      />
+                    )}
+                    {media.length > 0 && media[activeMediaIdx]?.type === 'video' && (
+                      <div className="text-center">
+                        <button
+                          className="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                          onClick={() => window.open(`/file-viewer?url=${encodeURIComponent(media[activeMediaIdx].url)}&title=${encodeURIComponent(book.title)}`, '_blank')}
+                        >
+                          Open Video in Viewer
+                        </button>
+                      </div>
+                    )}
+                    {media.length > 0 && media[activeMediaIdx]?.type === 'pdf' && (
+                      <div className="text-center w-full">
+                        <button
+                          className="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                          onClick={() => window.open(`/file-viewer?url=${encodeURIComponent(media[activeMediaIdx].url)}&title=${encodeURIComponent(book.title)}`, '_blank')}
+                        >
+                          Open PDF in Viewer
+                        </button>
+                      </div>
+                    )}
+                    {media.length > 0 && media[activeMediaIdx]?.type === 'file' && (
+                      <div className="flex flex-col items-center justify-center h-[500px] w-full">
+                        <i className="fas fa-file text-5xl text-gray-400"></i>
+                        <button
+                          onClick={() => window.open(`/file-viewer?url=${encodeURIComponent(media[activeMediaIdx].url)}&title=${encodeURIComponent(book.title)}`, '_blank')}
+                          className="mt-3 px-3 py-2 bg-gray-700 text-white rounded text-sm hover:bg-gray-800"
+                        >
+                          Open in Viewer
+                        </button>
+                      </div>
+                    )}
+                    {media.length === 0 && (
+                      <div className="flex flex-col items-center justify-center h-[500px] w-full text-gray-400">
+                        <i className="fas fa-image text-5xl mb-2"></i>
+                        <span>No media available</span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Thumbnails / File chips */}
+                  {media.length > 1 && (
+                    <div className="flex overflow-x-auto gap-3">
+                      {media.map((m, idx) => (
+                        <button
+                          key={m.url + idx}
+                          onClick={() => setActiveMediaIdx(idx)}
+                          className={`border rounded-lg p-1 flex-shrink-0 ${idx === activeMediaIdx ? 'border-purple-600 ring-1 ring-purple-300' : 'border-gray-200'}`}
+                          title={`Media ${idx + 1}`}
+                        >
+                          {m.type === 'image' ? (
+                            <img src={m.url} alt={`media-${idx}`} className="h-16 w-16 object-cover rounded" />
+                          ) : m.type === 'video' ? (
+                            <div className="h-16 w-16 rounded bg-black flex items-center justify-center text-white">
+                              <i className="fas fa-play"></i>
+                            </div>
+                          ) : m.type === 'pdf' ? (
+                            <div className="h-16 w-16 rounded bg-red-50 text-red-600 flex items-center justify-center">
+                              <span className="text-xs font-semibold">PDF</span>
+                            </div>
+                          ) : (
+                            <div className="h-16 w-16 rounded bg-gray-100 text-gray-600 flex items-center justify-center">
+                              <i className="fas fa-file"></i>
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Right — Details */}
