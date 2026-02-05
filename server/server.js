@@ -1,6 +1,7 @@
 //server.js
 import dotenv from "dotenv";
 import express from "express";
+
 import cors from "cors";
 import buyerRoutes from "./routes/buyer.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
@@ -32,7 +33,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: "5mb" }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true,}));
+app.use(cors({origin: CLIENT_URL, credentials: true}));
 
 // API routes with /api prefix
 app.use("/api/buyer", buyerRoutes);
