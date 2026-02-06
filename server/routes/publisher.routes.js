@@ -6,7 +6,6 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary.js";
 import { getPublisherDashboard, getPublisherProfile, updatePublisherProfile, createPublisherSignup, publishBook, sellAntique, getPublisherBook, updatePublisherBook, deletePublisherBook, restorePublisherBook } from "../controllers/publisher.controller.js";
 
-// Storage for regular book images (restrict to images)
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -17,13 +16,11 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-// Storage for antique uploads: allow images and documents (resource_type auto)
 const antiqueStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => ({
     folder: "publishelf/antique",
     resource_type: "auto",
-    // Let Cloudinary auto-detect; do not restrict formats here
   }),
 });
 
