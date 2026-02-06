@@ -2,7 +2,7 @@
 import { loginUser } from "../services/auth.services.js";
 import { getCookieOptions } from "../config/cookie.js";
 
-export const loginPostController = async (req, res) => {
+export const loginPostController = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -33,16 +33,11 @@ export const loginPostController = async (req, res) => {
       data: { user: result.user }
     });
   } catch (error) {
-    console.error("Error in loginPostController:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error. Please try again later.",
-      data: null
-    });
+    next(error);
   }
 };
 
-export const getMeController = async (req, res) => {
+export const getMeController = async (req, res, next) => {
   try {
     // req.user is set by the protect middleware after verifying token
     console.log("auth controller getme", req?.body , req?.user);
@@ -57,16 +52,11 @@ export const getMeController = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error in getMeController:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error. Please try again later.",
-      data: null
-    });
+    next(error);
   }
 };
 
-export const logoutController = async (req, res) => {
+export const logoutController = async (req, res, next) => {
   try {
     res.clearCookie("token", getCookieOptions());
 
@@ -76,11 +66,6 @@ export const logoutController = async (req, res) => {
       data: null
     });
   } catch (error) {
-    console.error("Error in logoutController:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error. Please try again later.",
-      data: null
-    });
+    next(error);
   }
 };

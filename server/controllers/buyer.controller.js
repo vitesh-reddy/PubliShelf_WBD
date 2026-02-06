@@ -7,7 +7,7 @@ import Buyer from "../models/Buyer.model.js";
 import Book from "../models/Book.model.js";
 import Order from "../models/Order.model.js";
 
-export const getBuyerDashboard = async (req, res) => {
+export const getBuyerDashboard = async (req, res, next) => {
   try {
     // Only select needed fields for books
     const newlyBooks = await Book.find({isDeleted: { $ne: true }})
@@ -98,16 +98,11 @@ export const getBuyerDashboard = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error loading buyer dashboard:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error loading dashboard",
-      data: null
-    });
+    next(error);
   }
 };
 
-export const getBuyerSearchPage = async (req, res) => {
+export const getBuyerSearchPage = async (req, res, next) => {
   try {
     const books = await getAllBooks({isDeleted: false});
     res.status(200).json({
@@ -116,12 +111,7 @@ export const getBuyerSearchPage = async (req, res) => {
       data: { books }
     });
   } catch (error) {
-    console.error("Error loading buyer search page:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error loading search page",
-      data: null
-    });
+    next(error);
   }
 };
 

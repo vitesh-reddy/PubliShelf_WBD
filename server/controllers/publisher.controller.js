@@ -9,7 +9,7 @@ import Publisher from "../models/Publisher.model.js";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 
-export const getPublisherProfile = async (req, res) => {
+export const getPublisherProfile = async (req, res, next) => {
   try {
     const publisher = await getPublisherById(req.user.id);
     if (!publisher) {
@@ -176,12 +176,11 @@ export const getPublisherProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching publisher profile:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    next(error);
   }
 };
 
-export const getPublisherDashboard = async (req, res) => {
+export const getPublisherDashboard = async (req, res, next) => {
   try {
     const publisher = await getPublisherById(req.user.id);
 

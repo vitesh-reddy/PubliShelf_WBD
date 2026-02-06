@@ -4,7 +4,7 @@ import { getMetrics, getTopSoldBooks, getTrendingBooks } from "../services/buyer
 
 const router = express.Router();
 
-router.get("/api/home/data", async (req, res) => {
+router.get("/api/home/data", async (req, res, next) => {
   try {
     const newlyBooks = await Book.find({ isDeleted: { $ne: true } })
       .sort({ publishedAt: -1 })
@@ -24,12 +24,7 @@ router.get("/api/home/data", async (req, res) => {
       data: { newlyBooks, mostSoldBooks, trendingBooks, metrics },
     });
   } catch (error) {
-    console.error("Error fetching home data:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-      data: null,
-    });
+    next(error);
   }
 });
 
