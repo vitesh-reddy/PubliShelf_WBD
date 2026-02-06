@@ -17,14 +17,28 @@ const logger = winston.createLogger({
     new winston.transports.File({ 
       filename: 'logs/app.log',
       maxsize: 10485760,
+      maxFiles: 3,
+      format: combine(
+        winston.format((info) => {
+          return info.level === 'error' ? false : info;
+        })(),
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        errors({ stack: true }),
+        logFormat
+      )
+    }),
+    new winston.transports.File({ 
+      filename: 'logs/error.log',
+      level: 'error',
+      maxsize: 10485760,
       maxFiles: 3
     })
   ],
   exceptionHandlers: [
-    new winston.transports.File({ filename: 'logs/app.log' })
+    new winston.transports.File({ filename: 'logs/error.log' })
   ],
   rejectionHandlers: [
-    new winston.transports.File({ filename: 'logs/app.log' })
+    new winston.transports.File({ filename: 'logs/error.log' })
   ]
 });
 

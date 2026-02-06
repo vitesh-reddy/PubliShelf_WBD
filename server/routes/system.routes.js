@@ -16,6 +16,8 @@ router.get("/api/home/data", async (req, res) => {
       getMetrics(),
     ]);
 
+    // throw new Error("Error found");
+
     res.status(200).json({
       success: true,
       message: "Home data fetched successfully",
