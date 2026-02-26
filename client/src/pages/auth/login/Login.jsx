@@ -11,7 +11,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from "../../../components/ui/AlertDialog";
 import { AuthHeader, TextInput, PasswordField, ErrorMessage } from '../components';
 import { emailRules, passwordRules } from '../validations';
-import Pagination from "../../../components/Pagination.jsx"; // Pagination component
+import Pagination from "../../../components/Pagination.jsx";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -22,7 +22,7 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [serverError, setServerError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [modalMode, setModalMode] = useState(null);
 
   const [alertDialog, setAlertDialog] = useState({
     open: false,
@@ -31,8 +31,7 @@ const Login = () => {
     type: ""
   });
 
-  /* ------------------- Pagination State ------------------- */
-  const allItems = []; // replace with actual data list
+  const allItems = [];
   const rowsPerPage = 5;
   const [currentPage, setCurrentPage] = useState(1);
   const [paginatedItems, setPaginatedItems] = useState([]);
@@ -54,15 +53,14 @@ const Login = () => {
     handlePageChange(1);
   }, [allItems]);
 
-  /* --------------------------- SUBMIT -------------------------- */
-  const onSubmit = async (data) => {
+  const performLogin = async (email, password) => {
     setServerError("");
     setIsLoading(true);
 
     try {
       const response = await login({
-        email: data.email.trim().toLowerCase(),
-        password: data.password,
+        email: email.trim().toLowerCase(),
+        password: password,
       });
 
       if (response.success) {
@@ -75,6 +73,7 @@ const Login = () => {
 
         if (rememberMe) localStorage.setItem("rememberMe", "true");
 
+        setModalMode(null);
         navigate(`/${userData.role}/dashboard`);
       } else {
         const message = response.message || "Unexpected error occurred.";
@@ -98,29 +97,61 @@ const Login = () => {
           }
 
           setAlertDialog({ open: true, title, message: fullMessage, type });
+          setModalMode(null);
         } else {
           setServerError(message);
+          setModalMode(null);
         }
       }
     } catch (err) {
       console.error("Login error:", err);
       setServerError("An error occurred. Please try again later.");
+      setModalMode(null);
     }
 
     setIsLoading(false);
   };
 
-  /* ------------------- BACKDROP CLICK CLOSE -------------------- */
+  const onSubmit = async (data) => {
+    await performLogin(data.email, data.password);
+  };
+
+  const handleDemoLogin = async (role) => {
+    const demoCredentials = {
+      buyer: {
+        email: import.meta.env.VITE_DEMO_BUYER_EMAIL,
+        password: import.meta.env.VITE_DEMO_BUYER_PASSWORD
+      },
+      publisher: {
+        email: import.meta.env.VITE_DEMO_PUBLISHER_EMAIL,
+        password: import.meta.env.VITE_DEMO_PUBLISHER_PASSWORD
+      },
+      manager: {
+        email: import.meta.env.VITE_DEMO_MANAGER_EMAIL,
+        password: import.meta.env.VITE_DEMO_MANAGER_PASSWORD
+      }
+    };
+
+    const credentials = demoCredentials[role];
+
+    if (!credentials?.email || !credentials?.password) {
+      setServerError("Demo credentials not configured.");
+      setModalMode(null);
+      return;
+    }
+
+    await performLogin(credentials.email, credentials.password);
+  };
   useEffect(() => {
     const closeOnBackdrop = (e) => {
-      if (showSignupModal && e.target.id === "signupModal") {
-        setShowSignupModal(false);
+      if (modalMode && e.target.id === "roleModal") {
+        setModalMode(null);
         document.body.style.overflow = "auto";
       }
     };
     document.addEventListener("click", closeOnBackdrop);
     return () => document.removeEventListener("click", closeOnBackdrop);
-  }, [showSignupModal]);
+  }, [modalMode]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50 to-white bg-gray-50">
@@ -128,7 +159,7 @@ const Login = () => {
 
         <AuthHeader
           title="Welcome back!"
-          subtitle={<span>Don't have an account? <button onClick={() => { setShowSignupModal(true); document.body.style.overflow='hidden'; }} className="font-medium text-purple-600 hover:text-purple-500">Sign up</button></span>}
+          subtitle={<span>Don't have an account? <button onClick={() => { setModalMode('signup'); document.body.style.overflow='hidden'; }} className="font-medium text-purple-600 hover:text-purple-500">Sign up</button></span>}
         />
 
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -182,10 +213,30 @@ const Login = () => {
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setModalMode('demo')}
+              disabled={isLoading}
+              className={`w-full flex justify-center items-center py-3 px-4 rounded-lg shadow-sm text-sm font-medium 
+              ${isLoading ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-50"}
+              focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-300`}
+            >
+              <i className="fas fa-flask mr-2"></i>
+              Demo Access
+            </button>
           </div>
         </form>
 
-        {/* ------------------- Pagination Example ------------------- */}
         {paginatedItems.length > 0 && (
           <div className="mt-6 w-full">
             {pageLoading ? (
@@ -203,49 +254,107 @@ const Login = () => {
           </div>
         )}
 
-        {/* --------------------------- SIGNUP MODAL --------------------------- */}
         <div
-          id="signupModal"
-          className={`fixed inset-0 bg-black/30 backdrop-blur-xs flex items-center justify-center z-50 ${showSignupModal ? "" : "hidden"}`}
+          id="roleModal"
+          className={`fixed inset-0 bg-black/30 backdrop-blur-xs flex items-center justify-center z-50 ${modalMode ? "" : "hidden"}`}
         >
           <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Choose Account Type</h3>
-              <button onClick={() => { setShowSignupModal(false); document.body.style.overflow = "auto"; }} className="text-gray-400 hover:text-gray-600">
+            <div className="flex justify-between items-center mb-1">
+              <h3 className="text-2xl font-bold text-gray-900">{modalMode === 'demo' ? 'Demo Access' : 'Choose Account Type'}</h3>
+              <button onClick={() => { setModalMode(null); document.body.style.overflow = "auto"; }} className="text-gray-400 hover:text-gray-600">
                 <i className="fas fa-times text-xl"></i>
               </button>
             </div>
 
-            <div className="space-y-4">
-              <Link to="/buyer/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
-                <div className="flex items-center">
-                  <i className="fas fa-user-tag text-2xl text-purple-600 mr-4"></i>
-                  <div>
-                    <h4 className="text-lg font-semibold">Buyer</h4>
-                    <p className="text-sm text-gray-600">Browse and purchase books</p>
-                  </div>
-                </div>
-              </Link>
+            {modalMode === 'demo' && <p className="text-gray-600 text-sm mb-4">Choose a role to explore the platform</p>}
 
-              <Link to="/publisher/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
-                <div className="flex items-center">
-                  <i className="fas fa-book-open text-2xl text-purple-600 mr-4"></i>
-                  <div>
-                    <h4 className="text-lg font-semibold">Publisher</h4>
-                    <p className="text-sm text-gray-600">List and sell your books</p>
-                  </div>
-                </div>
-              </Link>
+            <div className={modalMode === 'demo' ? 'space-y-3' : 'space-y-4'}>
+              {modalMode === 'signup' ? (
+                <>
+                  <Link to="/buyer/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
+                    <div className="flex items-center">
+                      <i className="fas fa-user-tag text-2xl text-purple-600 mr-4"></i>
+                      <div>
+                        <h4 className="text-lg font-semibold">Buyer</h4>
+                        <p className="text-sm text-gray-600">Browse and purchase books</p>
+                      </div>
+                    </div>
+                  </Link>
 
-              <Link to="/manager/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
-                <div className="flex items-center">
-                  <i className="fas fa-user-shield text-2xl text-purple-600 mr-4"></i>
-                  <div>
-                    <h4 className="text-lg font-semibold">Manager</h4>
-                    <p className="text-sm text-gray-600">Manage platform operations</p>
-                  </div>
-                </div>
-              </Link>
+                  <Link to="/publisher/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
+                    <div className="flex items-center">
+                      <i className="fas fa-book-open text-2xl text-purple-600 mr-4"></i>
+                      <div>
+                        <h4 className="text-lg font-semibold">Publisher</h4>
+                        <p className="text-sm text-gray-600">List and sell your books</p>
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link to="/manager/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
+                    <div className="flex items-center">
+                      <i className="fas fa-user-shield text-2xl text-purple-600 mr-4"></i>
+                      <div>
+                        <h4 className="text-lg font-semibold">Manager</h4>
+                        <p className="text-sm text-gray-600">Manage platform operations</p>
+                      </div>
+                    </div>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleDemoLogin('buyer')}
+                    disabled={isLoading}
+                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center">
+                      <i className="fas fa-user-tag text-2xl text-purple-600 mr-4"></i>
+                      <div>
+                        <h4 className="text-lg font-semibold">Buyer</h4>
+                        <p className="text-sm text-gray-600">Browse and purchase books</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleDemoLogin('publisher')}
+                    disabled={isLoading}
+                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center">
+                      <i className="fas fa-book-open text-2xl text-purple-600 mr-4"></i>
+                      <div>
+                        <h4 className="text-lg font-semibold">Publisher</h4>
+                        <p className="text-sm text-gray-600">List and sell your books</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleDemoLogin('manager')}
+                    disabled={isLoading}
+                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center">
+                      <i className="fas fa-user-shield text-2xl text-purple-600 mr-4"></i>
+                      <div>
+                        <h4 className="text-lg font-semibold">Manager</h4>
+                        <p className="text-sm text-gray-600">Manage platform operations</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {isLoading && (
+                    <div className="mt-4 text-center">
+                      <div className="inline-flex items-center text-purple-600">
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        <span className="text-sm">Logging in...</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
