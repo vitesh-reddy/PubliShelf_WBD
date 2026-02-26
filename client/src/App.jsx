@@ -8,6 +8,7 @@ import ToastProvider from './components/ToastProvider'
 import EntryAnimation from './components/EntryAnimation.jsx'
 import BackendReadyCheck from './components/BackendReadyCheck.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
+import AnalyticsTracker from './components/AnalyticsTracker.jsx'
 
 const App = () => {
   const isBackendReady = useSelector((state) => state.backend.isReady);
@@ -18,6 +19,7 @@ const App = () => {
       {isBackendReady && (
         <>
           <EntryAnimation />
+          <AnalyticsTracker />
           <ToastProvider />
           <ThemeToggle />
           <Routes>

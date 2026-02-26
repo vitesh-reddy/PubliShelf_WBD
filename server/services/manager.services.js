@@ -690,3 +690,230 @@ export const getAuctionAnalytics = async () => {
     throw new Error("Error fetching auction analytics");
   }
 };
+
+// ==================== Admin Analytics ====================
+
+/**
+ * Get all managers with their activity statistics for admin dashboard
+ */
+export const getAllManagersWithStats = async () => {
+  try {
+    const managers = await Manager.find()
+      .select("firstname lastname email moderation account lastLogin createdAt")
+      .lean();
+
+    // Get statistics for each manager
+    const managersWithStats = await Promise.all(
+      managers.map(async (manager) => {
+        const managerId = manager._id;
+
+        // Count antique books reviewed by this manager
+        const [totalReviewed, approvedAuctions, rejectedAuctions] = await Promise.all([
+          AntiqueBook.countDocuments({ reviewedBy: managerId }),
+          AntiqueBook.countDocuments({ reviewedBy: managerId, status: "approved" }),
+          AntiqueBook.countDocuments({ reviewedBy: managerId, status: "rejected" }),
+        ]);
+
+        // Count publishers approved/rejected/banned by this manager (using moderation.by)
+        const [publishersApproved, publishersRejected] = await Promise.all([
+          Publisher.countDocuments({ "moderation.by": managerId, "moderation.status": "approved" }),
+          Publisher.countDocuments({ "moderation.by": managerId, "moderation.status": "rejected" }),
+        ]);
+
+        // Count publishers banned by this manager
+        const publishersBanned = await Publisher.countDocuments({
+          "account.by": managerId,
+          "account.status": "banned",
+        });
+
+        return {
+          ...manager,
+          fullName: `${manager.firstname} ${manager.lastname}`,
+          stats: {
+            auctions: {
+              total: totalReviewed,
+              approved: approvedAuctions,
+              rejected: rejectedAuctions,
+            },
+            publishers: {
+              approved: publishersApproved,
+              rejected: publishersRejected,
+              banned: publishersBanned,
+            },
+          },
+        };
+      })
+    );
+
+    return managersWithStats;
+  } catch (error) {
+    console.error("Error in getAllManagersWithStats:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get detailed analytics for a specific manager (for admin view)
+ */
+export const getManagerDetailedAnalytics = async (managerId) => {
+  try {
+    const manager = await Manager.findById(managerId)
+      .select("firstname lastname email moderation account lastLogin createdAt")
+      .lean();
+
+    if (!manager) {
+      throw new Error("Manager not found");
+    }
+
+    const managerObjectId = new mongoose.Types.ObjectId(managerId);
+
+    // Get all antique books reviewed by this manager
+    const [auctionsApproved, auctionsRejected, auctionsPending] = await Promise.all([
+      AntiqueBook.find({ reviewedBy: managerId, status: "approved" })
+        .populate("publisher", "firstname lastname publishingHouse")
+        .select("title author condition basePrice currentPrice status auctionStart auctionEnd createdAt updatedAt")
+        .sort({ updatedAt: -1 })
+        .lean(),
+      AntiqueBook.find({ reviewedBy: managerId, status: "rejected" })
+        .populate("publisher", "firstname lastname publishingHouse")
+        .select("title author condition basePrice rejectionReason createdAt updatedAt")
+        .sort({ updatedAt: -1 })
+        .lean(),
+      AntiqueBook.find({ reviewedBy: managerId, status: "pending" })
+        .populate("publisher", "firstname lastname publishingHouse")
+        .select("title author condition basePrice createdAt")
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
+
+    // Get publishers approved/rejected by this manager
+    const [publishersApproved, publishersRejected, publishersBanned] = await Promise.all([
+      Publisher.find({ "moderation.by": managerId, "moderation.status": "approved" })
+        .select("firstname lastname publishingHouse email moderation createdAt")
+        .sort({ "moderation.at": -1 })
+        .lean(),
+      Publisher.find({ "moderation.by": managerId, "moderation.status": "rejected" })
+        .select("firstname lastname publishingHouse email moderation createdAt")
+        .sort({ "moderation.at": -1 })
+        .lean(),
+      Publisher.find({ "account.by": managerId, "account.status": "banned" })
+        .select("firstname lastname publishingHouse email account createdAt")
+        .sort({ "account.at": -1 })
+        .lean(),
+    ]);
+
+    // Activity timeline - last 6 months
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const auctionReviewTrend = await AntiqueBook.aggregate([
+      {
+        $match: {
+          reviewedBy: managerObjectId,
+          updatedAt: { $gte: sixMonthsAgo },
+          status: { $in: ["approved", "rejected"] },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$updatedAt" },
+            month: { $month: "$updatedAt" },
+            status: "$status",
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    // Format monthly activity
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const activityData = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const monthLabel = `${monthNames[month - 1]} ${year}`;
+
+      const approvedData = auctionReviewTrend.find(
+        (t) => t._id.year === year && t._id.month === month && t._id.status === "approved"
+      );
+      const rejectedData = auctionReviewTrend.find(
+        (t) => t._id.year === year && t._id.month === month && t._id.status === "rejected"
+      );
+
+      activityData.push({
+        month: monthLabel,
+        approved: approvedData ? approvedData.count : 0,
+        rejected: rejectedData ? rejectedData.count : 0,
+      });
+    }
+
+    // Recent activity log
+    const recentAuctions = await AntiqueBook.find({
+      reviewedBy: managerId,
+      status: { $in: ["approved", "rejected"] },
+    })
+      .populate("publisher", "firstname lastname publishingHouse")
+      .select("title status updatedAt rejectionReason")
+      .sort({ updatedAt: -1 })
+      .limit(15)
+      .lean();
+
+    const recentPublisherActions = [
+      ...(await Publisher.find({ "moderation.by": managerId })
+        .select("firstname lastname publishingHouse moderation")
+        .sort({ "moderation.at": -1 })
+        .limit(10)
+        .lean()),
+      ...(await Publisher.find({ "account.by": managerId })
+        .select("firstname lastname publishingHouse account")
+        .sort({ "account.at": -1 })
+        .limit(10)
+        .lean()),
+    ]
+      .sort((a, b) => {
+        const aDate = a.moderation?.at || a.account?.at || new Date(0);
+        const bDate = b.moderation?.at || b.account?.at || new Date(0);
+        return new Date(bDate) - new Date(aDate);
+      })
+      .slice(0, 10);
+
+    return {
+      manager: {
+        ...manager,
+        fullName: `${manager.firstname} ${manager.lastname}`,
+      },
+      auctions: {
+        total: auctionsApproved.length + auctionsRejected.length + auctionsPending.length,
+        approved: auctionsApproved,
+        rejected: auctionsRejected,
+        pending: auctionsPending,
+      },
+      publishers: {
+        approved: publishersApproved.map((p) => ({
+          ...p,
+          fullName: `${p.firstname} ${p.lastname}`,
+        })),
+        rejected: publishersRejected.map((p) => ({
+          ...p,
+          fullName: `${p.firstname} ${p.lastname}`,
+        })),
+        banned: publishersBanned.map((p) => ({
+          ...p,
+          fullName: `${p.firstname} ${p.lastname}`,
+        })),
+      },
+      activity: {
+        monthlyData: activityData,
+        recentAuctions,
+        recentPublisherActions,
+      },
+    };
+  } catch (error) {
+    console.error("Error in getManagerDetailedAnalytics:", error);
+    throw error;
+  }
+};

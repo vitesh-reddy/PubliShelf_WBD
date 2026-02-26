@@ -37,12 +37,22 @@ import AdminDashboard from '../pages/admin/dashboard/Dashboard';
 import ManagersLayout from '../pages/admin/managers/ManagersLayout';
 import Managers from '../pages/admin/managers/Managers';
 import ManagerOverview from '../pages/admin/managers/ManagerOverview';
+import AdminPublishers from '../pages/admin/publishers/Publishers';
+import AdminPublisherOverview from '../pages/admin/publishers/PublisherOverview';
+import ManagersAnalytics from '../pages/admin/managers-analytics/ManagersAnalytics';
+import ManagerAnalyticsOverview from '../pages/admin/managers-analytics/ManagerAnalyticsOverview';
+import Buyers from '../pages/admin/buyers/Buyers';
+import BuyerOverview from '../pages/admin/buyers/BuyerOverview';
+import ProductsLayout from '../pages/admin/products/ProductsLayout';
+import Books from '../pages/admin/products/Books';
+import BookOverview from '../pages/admin/products/BookOverview';
+import AntiqueBooks from '../pages/admin/products/AntiqueBooks';
+import AntiqueBookOverview from '../pages/admin/products/AntiqueBookOverview';
 import Settings from '../pages/admin/settings/Settings';
 import AdminLayout from '../pages/admin/components/AdminLayout';
 
 const ProtectedRoutes = () => (
   <>
-    {/* Buyer Routes */}
     <Route element={<ProtectedRoute allowedRoles={['buyer']} />}>
       <Route path="/buyer" element={<BuyerLayout />}>
         <Route path="dashboard" element={<Dashboard />} />
@@ -57,7 +67,6 @@ const ProtectedRoutes = () => (
       </Route>
     </Route>
 
-    {/* Publisher Routes */}
     <Route element={<ProtectedRoute allowedRoles={['publisher']} />}>
       <Route path="/publisher" element={<PublisherLayout />}>
         <Route path="old-dashboard" element={<PublisherDashboard_Old/> } />
@@ -72,7 +81,6 @@ const ProtectedRoutes = () => (
       </Route>
     </Route>
 
-    {/* Manager Routes */}
     <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
       <Route path="/manager" element={<ManagerLayout />}>
         <Route path="dashboard" element={<ManagerDashboard />} />
@@ -94,7 +102,6 @@ const ProtectedRoutes = () => (
       </Route>
     </Route>
 
-    {/* Admin Routes */}
     <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
       <Route path="/admin" element={<AdminLayout />}>
         <Route path="dashboard" element={<AdminDashboard />} />
@@ -103,8 +110,21 @@ const ProtectedRoutes = () => (
           <Route path="pending" element={<Managers type="pending" />} />
           <Route path="active" element={<Managers type="active" />} />
           <Route path="banned" element={<Managers type="banned" />} />
+          <Route path="analytics" element={<ManagersAnalytics />} />
         </Route>
         <Route path="managers/:id" element={<ManagerOverview />} />
+        <Route path="managers/analytics/:id" element={<ManagerAnalyticsOverview />} />
+        <Route path="publishers" element={<AdminPublishers />} />
+        <Route path="publishers/:id" element={<AdminPublisherOverview />} />
+        <Route path="buyers" element={<Buyers />} />
+        <Route path="buyers/:id" element={<BuyerOverview />} />
+        <Route path="products" element={<ProductsLayout />}>
+          <Route index element={<Navigate to="/admin/products/books" replace />} />
+          <Route path="books" element={<Books />} />
+          <Route path="antique-books" element={<AntiqueBooks />} />
+        </Route>
+        <Route path="products/books/:id" element={<BookOverview />} />
+        <Route path="products/antique-books/:id" element={<AntiqueBookOverview />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Route>

@@ -1,4 +1,3 @@
-//services/buyer.services.js
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import Buyer from "../models/Buyer.model.js";
@@ -27,13 +26,11 @@ export const updateBuyerWishlist = async (buyerId, wishlist) => {
   return await Buyer.findByIdAndUpdate(buyerId, { wishlist }, { new: true });
 };
 
-// Deprecated: orders are no longer embedded in Buyer
 export const addOrderToBuyer = async () => {
   throw new Error("addOrderToBuyer deprecated. Use Order model instead.");
 };
 
 export const getAllOrders = async () => {
-  // Admin view: return flattened line-items with buyer info and book snapshot
   const rows = await Order.aggregate([
     { $unwind: "$items" },
     {
@@ -86,17 +83,14 @@ export const updateCartItemQuantity = async (buyerId, bookId, quantity) => {
 };
 
 export const placeOrder = async (buyerId, { addressId, paymentMethod = "COD" } = {}) => {
-  // Load buyer with cart
   const buyer = await Buyer.findById(buyerId).populate("cart.book");
   if (!buyer) throw new Error("Buyer not found");
   if (!buyer.cart || buyer.cart.length === 0) throw new Error("Cart is empty");
 
-  // Resolve delivery address snapshot
   const addr = (buyer.addresses || []).find((a) => a._id?.toString() === addressId);
   if (!addr) throw new Error("Delivery address not found");
   const deliveryAddress = { name: addr.name, address: addr.address, phone: addr.phone };
 
-  // Build items and validate stock
   const items = [];
   let itemsTotal = 0;
   const unavailableBooks = [];
@@ -130,18 +124,15 @@ export const placeOrder = async (buyerId, { addressId, paymentMethod = "COD" } =
   if (items.length === 0)
     throw new Error("Cart is empty or all items are unavailable");
 
-  // Simple shipping/tax rules (keep consistent with frontend if any)
-  const shipping = itemsTotal > 35 ? 0 : 100; // as used in frontend
+  const shipping = itemsTotal > 35 ? 0 : 100;
   const tax = itemsTotal * 0.02;
   const discount = 0;
   const grandTotal = itemsTotal + shipping + tax - discount;
 
-  // Try transaction for atomic stock updates + order creation
   const session = await mongoose.startSession();
   let orderDoc;
   try {
     await session.withTransaction(async () => {
-      // Deduct stock
       for (const it of items) {
         const res = await Book.updateOne(
           { _id: it.book, quantity: { $gte: it.quantity } },
@@ -153,7 +144,6 @@ export const placeOrder = async (buyerId, { addressId, paymentMethod = "COD" } =
         }
       }
 
-      // Create order
       orderDoc = await Order.create([
         {
           buyer: buyer._id,
@@ -171,7 +161,6 @@ export const placeOrder = async (buyerId, { addressId, paymentMethod = "COD" } =
         },
       ], { session });
 
-      // Clear cart
       buyer.cart = [];
       await buyer.save({ session });
     });
@@ -196,7 +185,7 @@ export const updateBuyerDetails = async (buyerId, currentPassword, updatedData) 
     if (existingBuyer) throw new Error("Email already exists");
   }
   
-  // Update fields except password if it's empty (password change is optional)
+
   const fieldsToUpdate = { ...updatedData };
   if (!updatedData.password) {
     delete fieldsToUpdate.password;
@@ -300,5 +289,298 @@ export const getMetrics = async () => {
     };
   } catch (error) {
     throw new Error("Failed to fetch book metrics: " + error.message);
+  }
+};
+
+export const getAllBuyersWithStats = async () => {
+  try {
+    const buyers = await Buyer.find()
+      .select("firstname lastname email createdAt")
+      .lean();
+
+    const buyersWithStats = await Promise.all(
+      buyers.map(async (buyer) => {
+        const buyerId = buyer._id;
+
+        const [orders, totalSpent] = await Promise.all([
+          Order.find({ buyer: buyerId }).select("_id createdAt status grandTotal").lean(),
+          Order.aggregate([
+            { $match: { buyer: buyerId } },
+            {
+              $group: {
+                _id: null,
+                totalSpent: { $sum: "$grandTotal" },
+                totalOrders: { $sum: 1 },
+              },
+            },
+          ]),
+        ]);
+
+        const spent = totalSpent.length > 0 ? totalSpent[0] : { totalSpent: 0, totalOrders: 0 };
+
+        const booksPurchased = await Order.aggregate([
+          { $match: { buyer: buyerId } },
+          { $unwind: "$items" },
+          {
+            $group: {
+              _id: null,
+              totalBooks: { $sum: "$items.quantity" },
+            },
+          },
+        ]);
+
+        const booksCount = booksPurchased.length > 0 ? booksPurchased[0].totalBooks : 0;
+
+        const recentOrder = orders.length > 0 ? orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] : null;
+
+        return {
+          ...buyer,
+          fullName: `${buyer.firstname} ${buyer.lastname}`,
+          stats: {
+            totalSpent: spent.totalSpent,
+            totalOrders: spent.totalOrders,
+            booksPurchased: booksCount,
+            recentOrderDate: recentOrder?.createdAt || null,
+            recentOrderStatus: recentOrder?.status || null,
+          },
+        };
+      })
+    );
+
+    return buyersWithStats;
+  } catch (error) {
+    console.error("Error in getAllBuyersWithStats:", error);
+    throw error;
+  }
+};
+
+export const getBuyerDetailedAnalytics = async (buyerId) => {
+  try {
+    const buyer = await Buyer.findById(buyerId)
+      .select("firstname lastname email createdAt cart wishlist addresses")
+      .populate("cart.book", "title author price image")
+      .populate("wishlist", "title author price image")
+      .lean();
+
+    if (!buyer) {
+      throw new Error("Buyer not found");
+    }
+
+    const buyerObjectId = new mongoose.Types.ObjectId(buyerId);
+
+    const orders = await Order.find({ buyer: buyerId })
+      .populate("items.book", "title author genre")
+      .populate("items.publisher", "firstname lastname publishingHouse")
+      .select("items deliveryAddress paymentMethod paymentStatus status currency itemsTotal shipping tax discount grandTotal createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const monthlySpending = await Order.aggregate([
+      { $match: { buyer: buyerObjectId, createdAt: { $gte: sixMonthsAgo } } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          spending: { $sum: "$grandTotal" },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const spendingData = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const monthLabel = `${monthNames[month - 1]} ${year}`;
+      const monthData = monthlySpending.find((m) => m._id.year === year && m._id.month === month);
+      spendingData.push({
+        month: monthLabel,
+        total: monthData ? monthData.spending : 0,
+        orders: monthData ? monthData.orders : 0,
+      });
+    }
+
+    const totalStats = await Order.aggregate([
+      { $match: { buyer: buyerObjectId } },
+      {
+        $group: {
+          _id: null,
+          totalSpent: { $sum: "$grandTotal" },
+          totalOrders: { $sum: 1 },
+          avgOrderValue: { $avg: "$grandTotal" },
+        },
+      },
+    ]);
+
+    const stats = totalStats.length > 0 ? totalStats[0] : { totalSpent: 0, totalOrders: 0, avgOrderValue: 0 };
+
+    const booksPurchased = await Order.aggregate([
+      { $match: { buyer: buyerObjectId } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: null,
+          totalBooks: { $sum: "$items.quantity" },
+        },
+      },
+    ]);
+
+    const totalBooksPurchased = booksPurchased.length > 0 ? booksPurchased[0].totalBooks : 0;
+
+    const genreBreakdown = await Order.aggregate([
+      { $match: { buyer: buyerObjectId } },
+      { $unwind: "$items" },
+      {
+        $lookup: {
+          from: "books",
+          localField: "items.book",
+          foreignField: "_id",
+          as: "bookDetails",
+        },
+      },
+      { $unwind: "$bookDetails" },
+      {
+        $group: {
+          _id: "$bookDetails.genre",
+          count: { $sum: "$items.quantity" },
+          spent: { $sum: "$items.lineTotal" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+    ]);
+
+    const favoritePublishers = await Order.aggregate([
+      { $match: { buyer: buyerObjectId } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.publisher",
+          booksPurchased: { $sum: "$items.quantity" },
+          totalSpent: { $sum: "$items.lineTotal" },
+        },
+      },
+      { $sort: { booksPurchased: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "publishers",
+          localField: "_id",
+          foreignField: "_id",
+          as: "publisherInfo",
+        },
+      },
+      { $unwind: "$publisherInfo" },
+      {
+        $project: {
+          publisherName: {
+            $cond: {
+              if: { $ne: ["$publisherInfo.publishingHouse", null] },
+              then: "$publisherInfo.publishingHouse",
+              else: { $concat: ["$publisherInfo.firstname", " ", "$publisherInfo.lastname"] }
+            }
+          },
+          count: "$booksPurchased",
+          totalSpent: 1,
+        },
+      },
+    ]);
+
+    const mostPurchasedBooks = await Order.aggregate([
+      { $match: { buyer: buyerObjectId } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.book",
+          title: { $first: "$items.title" },
+          quantity: { $sum: "$items.quantity" },
+          totalSpent: { $sum: "$items.lineTotal" },
+        },
+      },
+      {
+        $lookup: {
+          from: "books",
+          localField: "_id",
+          foreignField: "_id",
+          as: "bookDetails",
+        },
+      },
+      { $unwind: { path: "$bookDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          title: { $ifNull: ["$bookDetails.title", "$title"] },
+          author: { $ifNull: ["$bookDetails.author", "Unknown"] },
+          genre: { $ifNull: ["$bookDetails.genre", "Unknown"] },
+          count: "$quantity",
+          totalSpent: 1,
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]);
+
+    const paymentMethodStats = await Order.aggregate([
+      { $match: { buyer: buyerObjectId } },
+      {
+        $group: {
+          _id: "$paymentMethod",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const orderStatusStats = await Order.aggregate([
+      { $match: { buyer: buyerObjectId } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    return {
+      buyer: {
+        ...buyer,
+        fullName: `${buyer.firstname} ${buyer.lastname}`,
+      },
+      stats: {
+        totalSpent: stats.totalSpent,
+        totalOrders: stats.totalOrders,
+        avgOrderValue: stats.avgOrderValue,
+        totalBooksPurchased,
+      },
+      spending: {
+        monthlyData: spendingData,
+      },
+      orders: orders.map((order) => ({
+        ...order,
+        totalAmount: order.grandTotal,
+        itemCount: order.items.length,
+        items: order.items.map((item) => ({
+          ...item,
+          price: item.unitPrice || Math.floor(Math.random() * (2000 - 500 + 1)) + 500,
+        })),
+      })),
+      insights: {
+        genreBreakdown,
+        favoritePublishers,
+        mostPurchasedBooks,
+        paymentMethods: paymentMethodStats,
+        orderStatuses: orderStatusStats,
+      },
+    };
+  } catch (error) {
+    console.error("Error in getBuyerDetailedAnalytics:", error);
+    throw error;
   }
 };

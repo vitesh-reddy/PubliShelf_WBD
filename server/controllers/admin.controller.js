@@ -1,16 +1,37 @@
-//controllers/admin.controller.js
 import Admin from "../models/Admin.model.js";
 import Publisher from "../models/Publisher.model.js";
 import Manager from "../models/Manager.model.js";
 import jwt from "jsonwebtoken";
 import { getCookieOptions } from "../config/cookie.js";
-import { getAllPublishers, deletePublisherById, togglePublisherBan } from "../services/publisher.services.js";
-import { getAllBuyers, getAllOrders } from "../services/buyer.services.js";
+import { 
+  getAllPublishers, 
+  deletePublisherById, 
+  togglePublisherBan,
+  getAllPublishersWithStats,
+  getPublisherDetailedAnalytics
+} from "../services/publisher.services.js";
+import { 
+  getAllManagersWithStats, 
+  getManagerDetailedAnalytics 
+} from "../services/manager.services.js";
+import { 
+  getAllBuyers, 
+  getAllOrders,
+  getAllBuyersWithStats,
+  getBuyerDetailedAnalytics
+} from "../services/buyer.services.js";
+import {
+  getAllBooksWithStats,
+  getBookDetailedAnalytics
+} from "../services/book.services.js";
+import {
+  getAllAntiqueBooksWithStats,
+  getAntiqueBookDetailedAnalytics
+} from "../services/antiqueBook.services.js";
 import Order from "../models/Order.model.js";
 import Book from "../models/Book.model.js";
 import Buyer from "../models/Buyer.model.js";
 
-// ==================== Auth ====================
 export const loginAdmin = async (req, res) => {
   try {
     const { adminKey } = req.body;
@@ -80,10 +101,8 @@ export const loginAdmin = async (req, res) => {
   }
 };
 
-// ==================== Analytics ====================
 export const getPlatformAnalytics = async (req, res) => {
   try {
-    // Get current date ranges
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
@@ -92,7 +111,6 @@ export const getPlatformAnalytics = async (req, res) => {
     const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const last12Months = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
-    // Basic counts
     const [managersCount, buyersCount, booksCount, publishersCount] = await Promise.all([
       Manager.countDocuments({ "moderation.status": "approved", "account.status": "active" }),
       getAllBuyers().then(b => b.length),
@@ -100,7 +118,6 @@ export const getPlatformAnalytics = async (req, res) => {
       Publisher.countDocuments({ "moderation.status": "approved" })
     ]);
 
-    // Revenue aggregations
     const [
       totalRevenueAgg,
       todayRevenueAgg,
@@ -131,7 +148,6 @@ export const getPlatformAnalytics = async (req, res) => {
         { $match: { createdAt: { $gte: startOfYear } } },
         { $group: { _id: null, revenue: { $sum: "$grandTotal" }, count: { $sum: 1 } } }
       ]),
-      // Last 30 days daily revenue
       Order.aggregate([
         { $match: { createdAt: { $gte: last30Days } } },
         {
@@ -143,7 +159,6 @@ export const getPlatformAnalytics = async (req, res) => {
         },
         { $sort: { _id: 1 } }
       ]),
-      // Last 12 months revenue
       Order.aggregate([
         { $match: { createdAt: { $gte: last12Months } } },
         {
@@ -155,7 +170,6 @@ export const getPlatformAnalytics = async (req, res) => {
         },
         { $sort: { _id: 1 } }
       ]),
-      // Orders by status
       Order.aggregate([
         {
           $group: {
@@ -164,7 +178,6 @@ export const getPlatformAnalytics = async (req, res) => {
           }
         }
       ]),
-      // Revenue by order status
       Order.aggregate([
         {
           $group: {
@@ -175,7 +188,7 @@ export const getPlatformAnalytics = async (req, res) => {
       ])
     ]);
 
-    // Top Publishers by Revenue
+
     const topPublishers = await Order.aggregate([
       { $unwind: "$items" },
       {
@@ -209,7 +222,6 @@ export const getPlatformAnalytics = async (req, res) => {
       }
     ]);
 
-    // Top Buyers by Spending
     const topBuyers = await Order.aggregate([
       {
         $group: {
@@ -240,7 +252,6 @@ export const getPlatformAnalytics = async (req, res) => {
       }
     ]);
 
-    // Revenue breakdown
     const revenueBreakdown = await Order.aggregate([
       {
         $group: {
@@ -253,7 +264,6 @@ export const getPlatformAnalytics = async (req, res) => {
       }
     ]);
 
-    // Calculate metrics
     const totalOrders = totalRevenueAgg[0]?.count || 0;
     const totalRevenue = totalRevenueAgg[0]?.revenue || 0;
     const todayRevenue = todayRevenueAgg[0]?.revenue || 0;
@@ -262,14 +272,12 @@ export const getPlatformAnalytics = async (req, res) => {
     const yearRevenue = yearRevenueAgg[0]?.revenue || 0;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-    // Format daily revenue trend (last 30 days)
     const revenueTrend = last30DaysRevenue.map(item => ({
       date: item._id,
       revenue: item.revenue,
       orders: item.orders
     }));
 
-    // Format monthly revenue (last 12 months)
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthlyRevenue = last12MonthsRevenue.map(item => {
       const [year, month] = item._id.split('-');
@@ -280,7 +288,6 @@ export const getPlatformAnalytics = async (req, res) => {
       };
     });
 
-    // Format order status data
     const orderStatusData = ordersByStatus.map(item => ({
       status: item._id,
       count: item.count
@@ -292,14 +299,12 @@ export const getPlatformAnalytics = async (req, res) => {
     }));
 
     return res.status(200).json({
-      // Basic counts
       managers: managersCount,
       publishers: publishersCount,
       buyers: buyersCount,
       books: booksCount,
       orders: totalOrders,
       
-      // Revenue metrics
       revenue: {
         total: totalRevenue,
         today: todayRevenue,
@@ -310,15 +315,12 @@ export const getPlatformAnalytics = async (req, res) => {
         breakdown: revenueBreakdown[0] || { itemsTotal: 0, shipping: 0, tax: 0, discount: 0 }
       },
       
-      // Trends
       revenueTrend: revenueTrend,
       monthlyRevenue: monthlyRevenue,
       
-      // Orders analytics
       ordersByStatus: orderStatusData,
       revenueByStatus: revenueByStatusData,
       
-      // Top performers
       topPublishers: topPublishers,
       topBuyers: topBuyers
     });
@@ -328,12 +330,11 @@ export const getPlatformAnalytics = async (req, res) => {
   }
 };
 
-// ==================== Dashboard ====================
 export const getAdminDashboard = async (req, res) => {
   try {
     const buyers = await getAllBuyers();
     const orders = await getAllOrders();
-    const auctions = []; // Placeholder
+    const auctions = [];
 
     const totalBuyers = buyers.length;
     const totalOrders = orders.length;
@@ -388,7 +389,6 @@ export const getAdminDashboard = async (req, res) => {
   }
 };
 
-// ==================== Publisher Ban ====================
 export const banPublisher = async (req, res) => {
   try {
     const publisherId = req.params.id;
@@ -410,7 +410,7 @@ export const banPublisher = async (req, res) => {
     });
   }
 };
-// ==================== Admin Team (Super Admin only) ====================
+
 export const getAdmins = async (req, res) => {
   try {
     const admins = await Admin.find().select("-adminKey").populate({ path: "createdBy", select: "name email" });
@@ -502,7 +502,6 @@ export const changeAdminKeyController = async (req, res) => {
     if (!admin) return res.status(404).json({ message: "Admin not found" });
     if (admin.isSuperAdmin) return res.status(400).json({ message: "Cannot change key for super admin" });
 
-    // Set the new admin key
     admin.adminKey = newAdminKey;
     
     try {
@@ -529,7 +528,6 @@ export const changeAdminKeyController = async (req, res) => {
   }
 };
 
-// ==================== Manager Management ====================
 export const getManagersForAdmin = async (req, res) => {
   try {
     const managers = await Manager.find()
@@ -537,7 +535,6 @@ export const getManagersForAdmin = async (req, res) => {
       .populate({ path: "account.by", select: "name email" })
       .sort({ createdAt: -1 });
     
-    // Return managers with full name computed
     const managersData = managers.map(m => ({
       _id: m._id,
       firstname: m.firstname,
@@ -667,5 +664,195 @@ export const reinstateManagerController = async (req, res) => {
   } catch (error) {
     console.error("Error reinstating manager:", error);
     return res.status(500).json({ message: "Error reinstating manager" });
+  }
+};
+
+export const getAllPublishersWithAnalytics = async (req, res) => {
+  try {
+    const publishers = await getAllPublishersWithStats();
+    return res.status(200).json({
+      success: true,
+      message: "Publishers with analytics fetched successfully",
+      data: publishers,
+    });
+  } catch (error) {
+    console.error("Error fetching publishers with analytics:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching publishers analytics",
+      data: null,
+    });
+  }
+};
+
+export const getPublisherAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const analytics = await getPublisherDetailedAnalytics(id);
+    return res.status(200).json({
+      success: true,
+      message: "Publisher analytics fetched successfully",
+      data: analytics,
+    });
+  } catch (error) {
+    console.error("Error fetching publisher analytics:", error);
+    const status = error.message === "Publisher not found" ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      message: error.message || "Error fetching publisher analytics",
+      data: null,
+    });
+  }
+};
+
+export const getAllManagersWithAnalytics = async (req, res) => {
+  try {
+    const managers = await getAllManagersWithStats();
+    return res.status(200).json({
+      success: true,
+      message: "Managers with analytics fetched successfully",
+      data: managers,
+    });
+  } catch (error) {
+    console.error("Error fetching managers with analytics:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching managers analytics",
+      data: null,
+    });
+  }
+};
+
+export const getManagerAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const analytics = await getManagerDetailedAnalytics(id);
+    return res.status(200).json({
+      success: true,
+      message: "Manager analytics fetched successfully",
+      data: analytics,
+    });
+  } catch (error) {
+    console.error("Error fetching manager analytics:", error);
+    const status = error.message === "Manager not found" ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      message: error.message || "Error fetching manager analytics",
+      data: null,
+    });
+  }
+};
+
+export const getAllBuyersWithAnalytics = async (req, res) => {
+  try {
+    const buyers = await getAllBuyersWithStats();
+    return res.status(200).json({
+      success: true,
+      message: "Buyers with analytics fetched successfully",
+      data: buyers,
+    });
+  } catch (error) {
+    console.error("Error fetching buyers with analytics:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching buyers analytics",
+      data: null,
+    });
+  }
+};
+
+export const getBuyerAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const analytics = await getBuyerDetailedAnalytics(id);
+    return res.status(200).json({
+      success: true,
+      message: "Buyer analytics fetched successfully",
+      data: analytics,
+    });
+  } catch (error) {
+    console.error("Error fetching buyer analytics:", error);
+    const status = error.message === "Buyer not found" ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      message: error.message || "Error fetching buyer analytics",
+      data: null,
+    });
+  }
+};
+
+export const getAllBooksWithAnalytics = async (req, res) => {
+  try {
+    const books = await getAllBooksWithStats();
+    return res.status(200).json({
+      success: true,
+      message: "Books analytics fetched successfully",
+      data: books,
+    });
+  } catch (error) {
+    console.error("Error fetching books analytics:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching books analytics",
+      data: null,
+    });
+  }
+};
+
+export const getBookAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const analytics = await getBookDetailedAnalytics(id);
+    return res.status(200).json({
+      success: true,
+      message: "Book analytics fetched successfully",
+      data: analytics,
+    });
+  } catch (error) {
+    console.error("Error fetching book analytics:", error);
+    const status = error.message === "Book not found" ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      message: error.message || "Error fetching book analytics",
+      data: null,
+    });
+  }
+};
+
+export const getAllAntiqueBooksWithAnalytics = async (req, res) => {
+  try {
+    const antiqueBooks = await getAllAntiqueBooksWithStats();
+    return res.status(200).json({
+      success: true,
+      message: "Antique books analytics fetched successfully",
+      data: antiqueBooks,
+    });
+  } catch (error) {
+    console.error("Error fetching antique books analytics:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching antique books analytics",
+      data: null,
+    });
+  }
+};
+
+export const getAntiqueBookAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const analytics = await getAntiqueBookDetailedAnalytics(id);
+    return res.status(200).json({
+      success: true,
+      message: "Antique book analytics fetched successfully",
+      data: analytics,
+    });
+  } catch (error) {
+    console.error("Error fetching antique book analytics:", error);
+    const status = error.message === "Antique book not found" ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      message: error.message || "Error fetching antique book analytics",
+      data: null,
+    });
   }
 };

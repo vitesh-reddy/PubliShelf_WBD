@@ -85,11 +85,6 @@ export const getAuctionOngoing = async (auctionId) => {
   return response.data;
 };
 
-export const placeBid = async ({ auctionId, bidAmount }) => {
-  const response = await axiosInstance.post(`buyer/auctions/${auctionId}/bid`, { bidAmount });
-  return response.data;
-};
-
 export const getProfile = async () => {
   const response = await axiosInstance.get("buyer/profile");
   return response.data;

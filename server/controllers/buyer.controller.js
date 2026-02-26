@@ -2,7 +2,7 @@
 import bcrypt from "bcrypt";
 import { getBuyerById, createBuyer, updateBuyerDetails, getTopSoldBooks, getTrendingBooks, placeOrder } from "../services/buyer.services.js";
 import { getAllBooks, getBookById, searchBooks, filterBooks} from "../services/book.services.js";
-import { getOngoingAuctions, getFutureAuctions, getEndedAuctions, getAuctionItemById, getAuctionPollingData, addBid } from "../services/antiqueBook.services.js";
+import { getOngoingAuctions, getFutureAuctions, getEndedAuctions, getAuctionItemById, addBid } from "../services/antiqueBook.services.js";
 import Buyer from "../models/Buyer.model.js";
 import Book from "../models/Book.model.js";
 import Order from "../models/Order.model.js";
@@ -565,28 +565,6 @@ export const getAuctionOngoing = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while fetching auction item details",
-      data: null
-    });
-  }
-};
-
-export const getAuctionPollData = async (req, res) => {
-  try {
-    const { id: auctionId } = req.params;
-    const { lastBidTime } = req.query;
-    
-    const pollData = await getAuctionPollingData(auctionId, lastBidTime);
-    
-    res.status(200).json({
-      success: true,
-      message: "Auction poll data fetched successfully",
-      data: pollData
-    });
-  } catch (error) {
-    console.error("Error fetching auction poll data:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message || "Failed to fetch auction poll data",
       data: null
     });
   }

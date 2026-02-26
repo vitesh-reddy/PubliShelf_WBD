@@ -11,6 +11,7 @@ const ManagersLayout = () => {
     { path: '/admin/managers/pending', label: 'Pending', icon: 'fa-clock' },
     { path: '/admin/managers/active', label: 'Active', icon: 'fa-check-circle' },
     { path: '/admin/managers/banned', label: 'Banned', icon: 'fa-ban' },
+    { path: '/admin/managers/analytics', label: 'Analytics', icon: 'fa-chart-line' },
   ];
 
   return (
