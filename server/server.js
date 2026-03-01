@@ -5,6 +5,7 @@ import express from "express";
 import morgan from "morgan";
 import { UAParser } from 'ua-parser-js';
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
 
 import connectDB from "./config/db.js";
 import { connectRedis } from "./config/redis.js";
@@ -12,6 +13,7 @@ import { PORT, MONGODB_URI, CLIENT_URL } from "./config/env.js";
 import logger from "./config/logger.js";
 import { securityConfig } from "./config/security.js";
 import { apiLimiter } from "./config/rateLimiter.js";
+import swaggerSpec from "./config/swagger.js";
 import { initializeAnalytics } from "./services/analytics.services.js";
 import { initializeSocket } from "./sockets/index.js";
 
@@ -48,6 +50,12 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(cookieParser());
 
 app.use(cors({origin: CLIENT_URL, credentials: true}));
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
+app.get("/api-docs.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
 
 app.use("/api/buyer", buyerRoutes);
 app.use("/api/admin", adminRoutes);
