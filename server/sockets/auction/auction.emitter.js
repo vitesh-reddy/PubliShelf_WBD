@@ -23,5 +23,5 @@ export const emitAudienceUpdate = (io, auctionId) => {
   
   auctionNamespace.to(room).emit("audienceUpdate", payload);
   
-  logger.info(`Broadcasted audienceUpdate to room ${room}: audienceCount=${audienceCount}`);
+  logger.debug(`Broadcasted audienceUpdate to room ${room}: audienceCount=${audienceCount}`);
 };

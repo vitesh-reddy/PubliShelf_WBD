@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import { checkBackendHealth } from '../store/slices/backendSlice';
 import { useTheme } from '../context/ThemeContext';
 
@@ -51,6 +52,7 @@ const dotVariants = {
 
 export default function BackendReadyCheck() {
   const dispatch = useDispatch();
+  const location = useLocation();
   const { isReady } = useSelector((state) => state.backend);
   const { theme } = useTheme();
   const [statusMessage, setStatusMessage] = useState('Waking up the bookshelf...');
@@ -59,10 +61,27 @@ export default function BackendReadyCheck() {
   const brandAccent = theme === 'ocean' ? '#4f8ca8' : '#7c3aed';
   const brandSecondary = theme === 'ocean' ? '#385460' : '#6366f1';
 
+  const routesNeedingBackend = [
+    '/login',
+    '/register',
+    '/buyer/dashboard',
+    '/buyer/checkout',
+    '/buyer/profile',
+    '/buyer/cart',
+    '/publisher/',
+    '/manager/',
+    '/admin/'
+  ];
+
+  const needsBackend = routesNeedingBackend.some(route => 
+    location.pathname.startsWith(route)
+  );
+
   useEffect(() => {
+    if (!needsBackend) return;
     const timer = setTimeout(() => setShowLoader(true), 1000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [needsBackend]);
 
   useEffect(() => {
     if (isReady) return;
@@ -95,8 +114,13 @@ export default function BackendReadyCheck() {
     return () => clearTimeout(timeoutId);
   }, [dispatch, isReady]);
 
-  if (isReady || !showLoader)
-    return null; 
+  if (!needsBackend) {
+    return null;
+  }
+
+  if (!showLoader) {
+    return null;
+  } 
 
   return (
     <AnimatePresence>

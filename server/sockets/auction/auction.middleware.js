@@ -30,7 +30,7 @@ export const socketAuthMiddleware = async (socket, next) => {
     const decoded = verifyToken(token);
     socket.user = decoded;
     
-    logger.info(`Socket authenticated: userId=${decoded.id}, role=${decoded.role}`);
+    logger.debug(`Socket authenticated: userId=${decoded.id}, role=${decoded.role}`);
     next();
   } catch (error) {
     logger.error(`Socket authentication failed: ${error.message}`);

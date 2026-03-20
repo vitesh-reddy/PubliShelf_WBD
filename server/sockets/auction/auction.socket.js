@@ -10,7 +10,7 @@ export const initializeAuctionSocket = (io) => {
   auctionNamespace.use(socketAuthMiddleware);
 
   auctionNamespace.on("connection", (socket) => {
-    logger.info(`Client connected to auction namespace: socketId=${socket.id}, userId=${socket.user.id}`);
+    logger.debug(`Client connected to auction namespace: socketId=${socket.id}, userId=${socket.user.id}`);
     socket.currentAuctionId = null;
 
     socket.on("joinAuction", async (data) => {
@@ -24,7 +24,7 @@ export const initializeAuctionSocket = (io) => {
         const room = `auction:${auctionId}`;
         await socket.join(room);
         socket.currentAuctionId = auctionId;
-        logger.info(`User ${socket.user.id} joined auction room: ${room}`);
+        logger.debug(`User ${socket.user.id} joined auction room: ${room}`);
 
         socket.emit("joinedAuction", { success: true, auctionId, message: "Successfully joined auction room" });
 
@@ -51,7 +51,7 @@ export const initializeAuctionSocket = (io) => {
         const room = `auction:${auctionId}`;
         await socket.leave(room);
         socket.currentAuctionId = null;
-        logger.info(`User ${socket.user.id} left auction room: ${room}`);
+        logger.debug(`User ${socket.user.id} left auction room: ${room}`);
 
         socket.emit("leftAuction", { success: true, auctionId, message: "Successfully left auction room" });
 
@@ -110,7 +110,7 @@ export const initializeAuctionSocket = (io) => {
     });
 
     socket.on("disconnect", (reason) => {
-      logger.info(`Client disconnected from auction namespace: socketId=${socket.id}, reason=${reason}`);
+      logger.debug(`Client disconnected from auction namespace: socketId=${socket.id}, reason=${reason}`);
 
       if (socket.currentAuctionId) {
         setImmediate(() => {
@@ -122,7 +122,7 @@ export const initializeAuctionSocket = (io) => {
     });
   });
 
-  logger.info("Auction namespace initialized at /auction");
+  logger.debug("Auction namespace initialized at /auction");
 };
 
 const scheduleAuctionEnd = async (auctionNamespace, auctionId) => {
@@ -145,7 +145,7 @@ const scheduleAuctionEnd = async (auctionNamespace, auctionId) => {
     }, delay);
 
     auctionEndTimers.set(auctionId, timer);
-    logger.info(`Scheduled auction end for ${auctionId} in ${delay}ms`);
+    logger.debug(`Scheduled auction end for ${auctionId} in ${delay}ms`);
   } catch (error) {
     logger.error(`Error scheduling auction end: ${error.message}`);
   }
@@ -154,5 +154,5 @@ const scheduleAuctionEnd = async (auctionNamespace, auctionId) => {
 const emitAuctionEnded = (auctionNamespace, auctionId) => {
   const room = `auction:${auctionId}`;
   auctionNamespace.to(room).emit("auctionEnded", { auctionId, serverTime: new Date() });
-  logger.info(`Emitted auctionEnded for ${auctionId}`);
+  logger.debug(`Emitted auctionEnded for ${auctionId}`);
 };

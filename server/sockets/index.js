@@ -15,7 +15,7 @@ export const initializeSocket = async (server) => {
       transports: ['websocket', 'polling'],
     });
 
-    logger.info("Socket.IO initialized");
+    logger.debug("Socket.IO initialized");
 
     await initializeRedisAdapter(io);
     initializeAuctionSocket(io);
@@ -48,13 +48,13 @@ const initializeRedisAdapter = async (io) => {
     });
 
     await pubClient.connect();
-    logger.info("Socket.IO Redis pub client connected");
+    logger.debug("Socket.IO Redis pub client connected");
 
     await subClient.connect();
-    logger.info("Socket.IO Redis sub client connected");
+    logger.debug("Socket.IO Redis sub client connected");
 
     io.adapter(createAdapter(pubClient, subClient));
-    logger.info("Socket.IO Redis adapter attached successfully (multi-process mode enabled)");
+    logger.debug("Socket.IO Redis adapter attached successfully (multi-process mode enabled)");
   } catch (error) {
     logger.error(`Failed to initialize Redis adapter: ${error.message}`);
     logger.warn("Socket.IO will continue in single-instance mode");

@@ -21,6 +21,8 @@ import publisherRoutes from "./routes/publisher.routes.js";
 import managerRoutes from "./routes/manager.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import systemRoutes from "./routes/system.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
+import { handleStripeWebhook } from "./services/stripe.services.js";
 import errorHandler from "./middleware/errorHandler.middleware.js";
 import notFoundHandler from "./middleware/notFoundHandler.middleware.js";
 
@@ -43,17 +45,36 @@ morgan.token('device', (req) => {
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :device', { stream: logger.stream }));
 
+app.post("/api/webhooks/stripe", express.raw({ type: "application/json" }), async (req, res) => {
+  const signature = req.headers["stripe-signature"];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    logger.error("STRIPE_WEBHOOK_SECRET is not configured");
+    return res.status(500).json({ error: "Webhook secret not configured" });
+  }
+
+  try {
+    await handleStripeWebhook(req, signature, webhookSecret);
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.error(`Webhook error: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(cookieParser());
 
-app.use(cors({origin: CLIENT_URL, credentials: true}));
+app.use(cors({ origin: true, credentials: true}));
 
 app.use("/api/buyer", buyerRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/publisher", publisherRoutes);
 app.use("/api/manager", managerRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use(systemRoutes);
 
 app.use(notFoundHandler);

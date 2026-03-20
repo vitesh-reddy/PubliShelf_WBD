@@ -1,7 +1,6 @@
-//routes/buyer.routes.js
 import express from "express";
 import { protect } from "../middleware/auth.middleware.js";
-import { getBuyerDashboard, getBuyerSearchPage, searchBooksHandler, filterBooksHandler, createBuyerSignup, getProductDetail, getBuyerCart, addToCart, removeFromCart, addToWishlist, removeFromWishlist, updateCartQuantity, placeOrderController, getBuyerAuctionPage, getAuctionItemDetail, getAuctionOngoing, placeBid, getBuyerProfile, updateBuyerProfile, updateBuyerProfileById, getBuyerAddresses, addBuyerAddress, updateBuyerAddress, deleteBuyerAddress } from "../controllers/buyer.controller.js";
+import { getBuyerDashboard, getBuyerSearchPage, searchBooksHandler, filterBooksHandler, createBuyerSignup, getProductDetail, getBuyerCart, addToCart, removeFromCart, addToWishlist, removeFromWishlist, updateCartQuantity, placeOrderController, createCheckoutSession, getBuyerAuctionPage, getAuctionItemDetail, getAuctionOngoing, placeBid, getBuyerProfile, updateBuyerProfile, updateBuyerProfileById, getBuyerAddresses, addBuyerAddress, updateBuyerAddress, deleteBuyerAddress } from "../controllers/buyer.controller.js";
 
 const router = express.Router();
 
@@ -18,6 +17,7 @@ router.post("/wishlist/add", protect, addToWishlist);
 router.delete("/wishlist/:bookId", protect, removeFromWishlist);
 router.patch("/cart/update-quantity", protect, updateCartQuantity);
 router.post("/checkout/place-order", protect, placeOrderController);
+router.post("/checkout/create-session", protect, createCheckoutSession);
 router.get("/auction-page", protect, getBuyerAuctionPage);
 router.get("/auction-item-detail/:id", protect, getAuctionItemDetail);
 router.get("/auction-ongoing/:id", protect, getAuctionOngoing);

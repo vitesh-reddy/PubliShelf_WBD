@@ -7,6 +7,7 @@ import BuyerProfile from '../pages/buyer/profile/Profile';
 import ProductDetail from '../pages/buyer/product-detail/ProductDetail';
 import Checkout from '../pages/buyer/checkout/Checkout';
 import Cart from '../pages/buyer/cart/Cart';
+import PaymentSuccess from '../pages/buyer/PaymentSuccess';
 import AuctionPage from '../pages/buyer/auction/AuctionPage';
 import AuctionItemDetail from '../pages/buyer/auction/AuctionItemDetail';
 import AuctionOngoing from '../pages/buyer/auction/AuctionOngoing';
@@ -61,6 +62,7 @@ const ProtectedRoutes = () => (
         <Route path="product-detail/:id" element={<ProductDetail />} />
         <Route path="checkout" element={<Checkout />} />
         <Route path="cart" element={<Cart />} />
+        <Route path="payment-success" element={<PaymentSuccess />} />
         <Route path="auction-page" element={<AuctionPage />} />
         <Route path="auction-item-detail/:id" element={<AuctionItemDetail />} />
         <Route path="auction-ongoing/:id" element={<AuctionOngoing />} />
