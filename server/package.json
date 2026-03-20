@@ -4,9 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
-    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "dev": "nodemon server.js",
     "start": "node server.js",
     "attribute:publishers": "node scripts/attributeLegacyPublishers.js"
@@ -44,6 +43,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.29.0",
     "babel-jest": "^30.2.0",
+    "cross-env": "^7.0.3",
     "jest": "^30.2.0"
   }
 }
