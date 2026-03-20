@@ -32,9 +32,20 @@ const orderSchema = new mongoose.Schema(
 
     deliveryAddress: { type: deliveryAddressSchema, required: true },
 
-    paymentMethod: { type: String, enum: ["COD", "CARD", "UPI"], default: "COD" },
+    paymentMethod: { type: String, enum: ["COD", "ONLINE"], default: "COD" },
+    paymentProvider: { type: String, enum: ["stripe", "cod"], default: "cod" },
     paymentStatus: { type: String, enum: ["pending", "paid", "failed", "refunded"], default: "pending", index: true },
     transactionId: { type: String },
+    stripeCheckoutSessionId: { type: String },
+    stripePaymentIntentId: { type: String },
+    idempotencyKey: { type: String, unique: true, sparse: true },
+
+    statusHistory: [{
+      status: { type: String },
+      source: { type: String },
+      reason: { type: String },
+      timestamp: { type: Date, default: Date.now }
+    }],
 
     status: {
       type: String,

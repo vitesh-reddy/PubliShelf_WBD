@@ -20,7 +20,7 @@ const connectRedis = async () => {
     });
 
     redisClient.on("connect", () => {
-      logger.info("Redis connected successfully");
+      logger.debug("Redis connected successfully");
       isConnected = true;
     });
 

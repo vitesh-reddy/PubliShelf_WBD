@@ -150,8 +150,10 @@ export const placeOrder = async (buyerId, { addressId, paymentMethod = "COD" } =
           items,
           deliveryAddress,
           paymentMethod,
-          paymentStatus: paymentMethod === "COD" ? "pending" : "paid",
-          status: paymentMethod === "COD" ? "created" : "paid",
+          paymentProvider: "cod",
+          paymentStatus: "pending",
+          status: "created",
+          statusHistory: [{ status: "created", source: "api:place-order-cod" }],
           currency: "INR",
           itemsTotal,
           shipping,
@@ -169,6 +171,66 @@ export const placeOrder = async (buyerId, { addressId, paymentMethod = "COD" } =
   }
 
   return Array.isArray(orderDoc) ? orderDoc[0] : orderDoc;
+};
+
+export const prepareCheckoutData = async (buyerId, addressId) => {
+  const buyer = await Buyer.findById(buyerId).populate("cart.book").lean();
+  if (!buyer) throw new Error("Buyer not found");
+  if (!buyer.cart || buyer.cart.length === 0) throw new Error("Cart is empty");
+
+  const addr = (buyer.addresses || []).find((a) => a._id?.toString() === addressId);
+  if (!addr) throw new Error("Delivery address not found");
+
+  const items = [];
+  let itemsTotal = 0;
+  const unavailableBooks = [];
+
+  for (const cartItem of buyer.cart) {
+    const bookDoc = await Book.findOne({ _id: cartItem.book._id, isDeleted: { $ne: true } });
+    if (!bookDoc) {
+      unavailableBooks.push(cartItem.book?.title || 'Unknown book');
+      continue;
+    }
+    if (bookDoc.quantity < cartItem.quantity) {
+      throw new Error(`Insufficient stock for ${bookDoc.title}. Available: ${bookDoc.quantity}`);
+    }
+    const unitPrice = bookDoc.price;
+    const lineTotal = unitPrice * cartItem.quantity;
+    itemsTotal += lineTotal;
+    items.push({
+      book: bookDoc._id,
+      title: bookDoc.title,
+      image: bookDoc.image,
+      publisher: bookDoc.publisher,
+      unitPrice,
+      quantity: cartItem.quantity,
+      lineTotal,
+    });
+  }
+
+  if (unavailableBooks.length > 0) {
+    throw new Error(`The following books are no longer available: ${unavailableBooks.join(', ')}`);
+  }
+
+  if (items.length === 0) {
+    throw new Error("Cart is empty or all items are unavailable");
+  }
+
+  const shipping = itemsTotal > 35 ? 0 : 100;
+  const tax = itemsTotal * 0.02;
+  const discount = 0;
+  const grandTotal = itemsTotal + shipping + tax - discount;
+
+  return {
+    buyer: { _id: buyer._id, email: buyer.email, firstname: buyer.firstname, lastname: buyer.lastname },
+    items,
+    deliveryAddress: { name: addr.name, address: addr.address, phone: addr.phone },
+    itemsTotal,
+    shipping,
+    tax,
+    discount,
+    grandTotal,
+  };
 };
 
 export const updateBuyerDetails = async (buyerId, currentPassword, updatedData) => {

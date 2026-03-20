@@ -1,8 +1,9 @@
 //controllers/buyer.controller.js
 import bcrypt from "bcrypt";
-import { getBuyerById, createBuyer, updateBuyerDetails, getTopSoldBooks, getTrendingBooks, placeOrder } from "../services/buyer.services.js";
+import { getBuyerById, createBuyer, updateBuyerDetails, getTopSoldBooks, getTrendingBooks, placeOrder, prepareCheckoutData } from "../services/buyer.services.js";
 import { getAllBooks, getBookById, searchBooks, filterBooks} from "../services/book.services.js";
 import { getOngoingAuctions, getFutureAuctions, getEndedAuctions, getAuctionItemById, addBid } from "../services/antiqueBook.services.js";
+import { createStripeCheckoutSession } from "../services/stripe.services.js";
 import Buyer from "../models/Buyer.model.js";
 import Book from "../models/Book.model.js";
 import Order from "../models/Order.model.js";
@@ -479,6 +480,15 @@ export const updateCartQuantity = async (req, res) => {
 export const placeOrderController = async (req, res) => {
   try {
     const { addressId, paymentMethod } = req.body;
+
+    if (paymentMethod === "ONLINE") {
+      return res.status(400).json({
+        success: false,
+        message: "For online payment, use the /payments/stripe/create-checkout-session endpoint",
+        data: null
+      });
+    }
+
     const order = await placeOrder(req.user.id, { addressId, paymentMethod });
     res.status(200).json({
       success: true,
@@ -492,6 +502,38 @@ export const placeOrderController = async (req, res) => {
       message: error.message || "An error occurred while placing the order",
       data: null
     });
+  }
+};
+
+export const createCheckoutSession = async (req, res) => {
+  try {
+    const { addressId, idempotencyKey } = req.body;
+
+    if (!addressId) {
+      return res.status(400).json({ success: false, message: "addressId is required" });
+    }
+
+    const checkoutData = await prepareCheckoutData(req.user.id, addressId);
+
+    const baseClientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const successUrl = `${baseClientUrl}/buyer/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${baseClientUrl}/buyer/checkout?paymentCancelled=true`;
+
+    const { sessionUrl, sessionId, orderId } = await createStripeCheckoutSession({
+      ...checkoutData,
+      successUrl,
+      cancelUrl,
+      idempotencyKey,
+    });
+
+    const buyer = await getBuyerById(req.user.id);
+    buyer.cart = [];
+    await buyer.save();
+
+    return res.status(200).json({ success: true, url: sessionUrl, sessionId, orderId });
+  } catch (error) {
+    console.error("Error creating Stripe Checkout session:", error);
+    return res.status(500).json({ success: false, message: error.message || "Failed to create Stripe Checkout session" });
   }
 };
 

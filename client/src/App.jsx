@@ -15,25 +15,21 @@ const App = () => {
 
   return (
     <div>
-      <BackendReadyCheck />
-      {isBackendReady && (
-        <>
-          <EntryAnimation />
-          <AnalyticsTracker />
-          <ToastProvider />
-          <ThemeToggle />
-          <Routes>
-            {/* Can be accessed by any users */}
-            {PublicRoutes()}
-            
-            {/* Can be accessed by non-authenticated users only */}
-            {PublicOnlyRoutes()}
-            
-            {/* Can be accessed by authenticated users only */}
-            {ProtectedRoutes()}
-          </Routes>
-        </>
-      )}
+      {!isBackendReady && <BackendReadyCheck />}
+      <EntryAnimation />
+      <AnalyticsTracker />
+      <ToastProvider />
+      <ThemeToggle />
+      <Routes>
+        {/* Can be accessed by any users */}
+        {PublicRoutes()}
+        
+        {/* Can be accessed by non-authenticated users only */}
+        {PublicOnlyRoutes()}
+        
+        {/* Can be accessed by authenticated users only */}
+        {ProtectedRoutes()}
+      </Routes>
     </div>
   )
 }

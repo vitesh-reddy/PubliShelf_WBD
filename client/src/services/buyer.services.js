@@ -120,3 +120,8 @@ export const deleteBuyerAddress = async (id) => {
   const response = await axiosInstance.delete(`buyer/addresses/${id}`);
   return response.data;
 };
+
+export const createCheckoutSession = async ({ addressId, idempotencyKey }) => {
+  const response = await axiosInstance.post("buyer/checkout/create-session", { addressId, idempotencyKey });
+  return response.data;
+};

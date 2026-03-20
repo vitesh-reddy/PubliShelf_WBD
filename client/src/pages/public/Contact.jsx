@@ -1,6 +1,7 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { sendContactEmail } from "../../services/email.services.js";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 
@@ -8,36 +9,43 @@ const Contact = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors, touchedFields, isSubmitted },
+    formState: { errors, touchedFields, isSubmitted, isSubmitting },
     reset,
   } = useForm({
     mode: "onBlur",
     reValidateMode: "onChange",
   });
 
-  // Validation helper - no leading/trailing spaces
   const noEdgeSpaces = (value) => {
     if (!value) return true;
     return value === value.trim() || "No leading or trailing spaces allowed.";
   };
 
-  // Form submission handler
-  const onSubmit = (data) => {
-    // Trim all string values
+  const onSubmit = async (data) => {
     const trimmedData = {
       name: data.name.trim(),
       email: data.email.trim(),
       message: data.message.trim(),
     };
-    
-    // Here you would typically send the data to your backend
-    console.log("Contact form submitted:", trimmedData);
-    
-    // Show success message
-    toast.success("Your message has been sent successfully!");
-    
-    // Reset form
-    reset();
+
+    const emailData = {
+      service_id: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+      template_id: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+      user_id: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
+      template_params: trimmedData
+    };
+
+    try {
+      const res = await sendContactEmail(emailData);
+      if (res === 'OK') {
+        toast.success("Your message has been sent successfully!");
+        reset();
+      } else {
+        toast.error('Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      toast.error('Failed to send email. Please check your network and try again.');
+    }
   };
 
   return (
@@ -144,9 +152,20 @@ const Contact = () => {
                 <div>
                   <button 
                     type="submit" 
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 hover:translate-y-[-2px] transition-all duration-500 linear w-full"
+                    disabled={isSubmitting}
+                    className={`bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 hover:translate-y-[-2px] transition-all duration-500 linear w-full flex justify-center items-center ${isSubmitting ? "opacity-70 cursor-not-allowed hover:translate-y-0 hover:bg-purple-600" : ""}`}
                   >
-                    Send Message
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Sending...</span>
+                      </div>
+                    ) : (
+                      "Send Message"
+                    )}
                   </button>
                 </div>
               </form>
