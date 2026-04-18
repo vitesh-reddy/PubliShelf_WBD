@@ -5,6 +5,7 @@ import Manager from "../models/Manager.model.js";
 import { generateToken } from "../utils/jwt.js";
 import { findAnyUserByEmail } from "./otp.services.js";
 import { GOOGLE_CLIENT_ID } from "../config/env.js";
+import logger from "../config/logger.js";
 
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
@@ -202,12 +203,20 @@ const updateExistingUserWithGoogle = async ({ user, googleId }) => {
   return { success: true, user };
 };
 
+const maskEmail = (email = "") => {
+  const [localPart = "", domain = ""] = String(email).split("@");
+  if (!localPart || !domain) return "unknown";
+  return `${localPart.slice(0, 2)}***@${domain}`;
+};
+
 export const googleAuthUser = async ({ credential, role = "" }) => {
   if (!googleClient) {
+    logger.error("[google-auth] abort reason=missing_google_client_id envKey=GOOGLE_CLIENT_ID");
     return toErrorResult(500, "Google client ID is not configured");
   }
 
   if (!credential) {
+    logger.warn("[google-auth] abort reason=missing_credential");
     return toErrorResult(400, "Google credential is required");
   }
 
@@ -219,7 +228,7 @@ export const googleAuthUser = async ({ credential, role = "" }) => {
       audience: GOOGLE_CLIENT_ID,
     });
   } catch (error) {
-    console.error("Google token verification failed:", error);
+    logger.error(`[google-auth] token_verification_failed reason=${error?.message || "unknown_error"}`);
     return toErrorResult(401, "Invalid Google token");
   }
 
@@ -229,10 +238,12 @@ export const googleAuthUser = async ({ credential, role = "" }) => {
   }
 
   if (!payload.email) {
+    logger.warn("[google-auth] abort reason=missing_email_in_payload");
     return toErrorResult(400, "Google account does not provide an email address");
   }
 
   if (payload.email_verified !== true) {
+    logger.warn(`[google-auth] abort reason=unverified_google_email email=${maskEmail(payload.email)}`);
     return toErrorResult(403, "Google email is not verified");
   }
 
@@ -251,6 +262,7 @@ export const googleAuthUser = async ({ credential, role = "" }) => {
     const { role: existingRole, user } = existingAccount;
 
     if (user.googleId && user.googleId !== googleId) {
+      logger.warn(`[google-auth] abort reason=google_id_mismatch role=${existingRole} email=${maskEmail(normalizedEmail)}`);
       return toErrorResult(409, "This Google account is already linked to a different profile");
     }
 
@@ -267,11 +279,13 @@ export const googleAuthUser = async ({ credential, role = "" }) => {
           : isManagerAccessible(updateResult.user);
 
     if (accessibility.allowed === false) {
+      logger.warn(`[google-auth] access_denied_existing role=${existingRole} reason=${accessibility.message}`);
       return toErrorResult(accessibility.code || 403, accessibility.message);
     }
 
     const sessionResult = await buildUserSession(existingRole, updateResult.user._id);
     if (!sessionResult) {
+      logger.error(`[google-auth] session_build_failed role=${existingRole} userId=${updateResult.user._id}`);
       return toErrorResult(500, "Unable to load user session");
     }
 
@@ -312,6 +326,7 @@ export const googleAuthUser = async ({ credential, role = "" }) => {
 
   const sessionResult = await buildUserSession(targetRole, createdUser._id);
   if (!sessionResult) {
+    logger.error(`[google-auth] session_build_failed role=${targetRole} userId=${createdUser._id}`);
     return toErrorResult(500, "Unable to load user session");
   }
 
