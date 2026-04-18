@@ -1,17 +1,15 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { login } from "../../../services/auth.services.js";
+import { login, googleAuth } from "../../../services/auth.services.js";
 import { useDispatch } from "react-redux";
-import { setAuth } from "../../../store/slices/authSlice";
-import { setUser } from "../../../store/slices/userSlice";
-import { setCart } from "../../../store/slices/cartSlice";
-import { setWishlist } from "../../../store/slices/wishlistSlice";
 import { useNavigate, Link } from "react-router-dom";
 
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from "../../../components/ui/AlertDialog";
-import { AuthHeader, TextInput, PasswordField, ErrorMessage } from '../components';
+import { AuthHeader, TextInput, PasswordField, ErrorMessage, GoogleAuthButton } from '../components';
+import ForgotPassword from "../forgot-password/ForgotPassword";
 import { emailRules, passwordRules } from '../validations';
 import Pagination from "../../../components/Pagination.jsx";
+import { applyAuthSession } from "../../../utils/authSession.util.js";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -22,7 +20,9 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [serverError, setServerError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [modalMode, setModalMode] = useState(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const [alertDialog, setAlertDialog] = useState({
     open: false,
@@ -53,6 +53,12 @@ const Login = () => {
     handlePageChange(1);
   }, [allItems]);
 
+  const handleAuthenticatedSession = (userData) => {
+    applyAuthSession(dispatch, userData, { rememberMe });
+    setModalMode(null);
+    navigate(`/${userData.role}/dashboard`);
+  };
+
   const performLogin = async (email, password) => {
     setServerError("");
     setIsLoading(true);
@@ -65,16 +71,7 @@ const Login = () => {
 
       if (response.success) {
         const userData = response.data.user;
-
-        dispatch(setAuth({ role: userData.role }));
-        dispatch(setUser({ ...userData }));
-        dispatch(setCart(userData.cart || []));
-        dispatch(setWishlist(userData.wishlist || []));
-
-        if (rememberMe) localStorage.setItem("rememberMe", "true");
-
-        setModalMode(null);
-        navigate(`/${userData.role}/dashboard`);
+        handleAuthenticatedSession(userData);
       } else {
         const message = response.message || "Unexpected error occurred.";
         const details = response.data;
@@ -110,6 +107,41 @@ const Login = () => {
     }
 
     setIsLoading(false);
+  };
+
+  const handleGoogleSignIn = async (credential) => {
+    setServerError("");
+    setIsGoogleLoading(true);
+
+    try {
+      const response = await googleAuth({ credential });
+
+      if (response.success) {
+        const userData = response.data?.user;
+
+        if (response.data?.authenticated && userData) {
+          handleAuthenticatedSession(userData);
+          toast.success(response.message || "Google sign-in successful");
+        } else {
+          const message = response.message || "Google account created, but approval is still pending.";
+          setServerError(message);
+          toast.info(message);
+        }
+
+        return;
+      }
+
+      const message = response.message || "Google sign-in failed.";
+      setServerError(message);
+      toast.error(message);
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      const message = error?.response?.data?.message || "Google sign-in failed. Please try again.";
+      setServerError(message);
+      toast.error(message);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   const onSubmit = async (data) => {
@@ -152,6 +184,10 @@ const Login = () => {
     document.addEventListener("click", closeOnBackdrop);
     return () => document.removeEventListener("click", closeOnBackdrop);
   }, [modalMode]);
+
+  if (showForgotPassword) {
+    return <ForgotPassword onBackToLogin={() => setShowForgotPassword(false)} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50 to-white bg-gray-50">
@@ -199,9 +235,9 @@ const Login = () => {
                 />
                 <label className="ml-2 text-sm text-gray-700 cursor-pointer">Remember me</label>
               </div>
-              <Link to="/forgot-password" className="text-sm font-medium text-purple-600 hover:text-purple-500">
+              <button type="button" onClick={() => setShowForgotPassword(true)} className="text-sm font-medium text-purple-600 hover:text-purple-500">
                 Forgot password?
-              </Link>
+              </button>
             </div>
 
             <button
@@ -219,16 +255,26 @@ const Login = () => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or</span>
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
+
+            <GoogleAuthButton
+              loading={isLoading || isGoogleLoading}
+              onSuccess={handleGoogleSignIn}
+              onError={(error) => {
+                const message = error?.message || "Google sign-in was cancelled or failed.";
+                setServerError(message);
+                toast.error(message);
+              }}
+            />
 
             <button
               type="button"
               onClick={() => setModalMode('demo')}
-              disabled={isLoading}
+              disabled={isLoading || isGoogleLoading}
               className={`w-full flex justify-center items-center py-3 px-4 rounded-lg shadow-sm text-sm font-medium 
-              ${isLoading ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-50"}
+              ${(isLoading || isGoogleLoading) ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-50"}
               focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-300`}
             >
               <i className="fas fa-flask mr-2"></i>

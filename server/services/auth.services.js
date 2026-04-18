@@ -4,6 +4,7 @@ import Buyer from "../models/Buyer.model.js";
 import Publisher from "../models/Publisher.model.js";
 import Manager from "../models/Manager.model.js";
 import { generateToken } from "../utils/jwt.js";
+import { issueOtp, resendOtp, signupUser, verifyOtp } from "./otp.services.js";
 
 export const loginUser = async (email, password) => {
   try {
@@ -14,6 +15,14 @@ export const loginUser = async (email, password) => {
       .lean();
 
     if (buyerDoc) {
+      if (buyerDoc.isVerified === false) {
+        return { token: null, user: null, code: 403, message: "Please verify your email before logging in." };
+      }
+
+      if (!buyerDoc.password) {
+        return { token: null, user: null, code: 403, message: "Please continue with Google to sign in." };
+      }
+
       const isPasswordValid = await bcrypt.compare(password, buyerDoc.password);
       if (!isPasswordValid) return { token: null, user: null, code: 401 };
       const { password: _pw, ...userWithoutPassword } = buyerDoc;
@@ -30,6 +39,14 @@ export const loginUser = async (email, password) => {
       .lean();
 
     if (publisherDoc) {
+      if (publisherDoc.isVerified === false) {
+        return { token: null, user: null, code: 403, message: "Please verify your email before logging in." };
+      }
+
+      if (!publisherDoc.password) {
+        return { token: null, user: null, code: 403, message: "Please continue with Google to sign in." };
+      }
+
       // Check if publisher is banned (new schema or legacy)
       const isBanned = publisherDoc.account?.status === "banned" || publisherDoc.banned === true;
       if (isBanned) {
@@ -108,6 +125,14 @@ export const loginUser = async (email, password) => {
       .lean();
 
     if (managerDoc) {
+      if (managerDoc.isVerified === false) {
+        return { token: null, user: null, code: 403, message: "Please verify your email before logging in." };
+      }
+
+      if (!managerDoc.password) {
+        return { token: null, user: null, code: 403, message: "Please continue with Google to sign in." };
+      }
+
       // Check if manager is banned
       const isBanned = managerDoc.account?.status === "banned";
       if (isBanned) {
@@ -185,3 +210,5 @@ export const loginUser = async (email, password) => {
     throw new Error("Error logging in user");
   }
 };
+
+export { issueOtp, resendOtp, signupUser, verifyOtp };

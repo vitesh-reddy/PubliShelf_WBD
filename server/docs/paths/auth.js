@@ -1,4 +1,195 @@
 export const authPaths = {
+  "/api/auth/signup": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Create a pending account and send a verification OTP",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/AuthSignupRequest" }
+          }
+        }
+      },
+      responses: {
+        201: {
+          description: "Registration started",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        },
+        400: {
+          description: "Invalid signup payload",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/send-otp": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Send a verification OTP",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/OTPRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "OTP sent",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/verify-otp": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Verify a submitted OTP",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/OTPVerifyRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "OTP verified",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/resend-otp": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Resend verification OTP with cooldown checks",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/OTPRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "OTP resent",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/forgot-password": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Send a reset-password OTP to a registered email",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ForgotPasswordRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "Reset OTP sent",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        },
+        404: {
+          description: "Email not registered",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/verify-reset-otp": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Verify a password reset OTP without consuming it",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/OTPVerifyRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "Reset OTP verified",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/reset-password": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Verify OTP and reset password",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ResetPasswordRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "Password reset successfully",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
   "/api/auth/login": {
     post: {
       tags: ["Authentication"],

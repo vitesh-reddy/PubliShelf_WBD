@@ -6,7 +6,12 @@ const publisherSchema = new mongoose.Schema(
     lastname: { type: String, required: true },
     publishingHouse: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String, required: false, default: null },
+    authProvider: { type: String, enum: ["local", "google"], default: "local", index: true },
+    googleId: { type: String, default: "", index: true },
+    isVerified: { type: Boolean, default: false },
+    verifiedAt: { type: Date, default: null },
+    otpExpiry: { type: Date, default: null },
     books: [{ type: mongoose.Schema.Types.ObjectId, ref: "Book" }],
 
     // Optional contact/business fields used by Admin UI

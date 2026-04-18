@@ -7,6 +7,9 @@ import { Provider } from 'react-redux'
 import { store } from './store'
 import { FirstVisitProvider } from './context/FirstVisitContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { GoogleOAuthProvider } from '@react-oauth/google'
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,7 +17,13 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
     <FirstVisitProvider>
       <ThemeProvider>
-        <App />
+        {googleClientId ? (
+          <GoogleOAuthProvider clientId={googleClientId}>
+            <App />
+          </GoogleOAuthProvider>
+        ) : (
+          <App />
+        )}
       </ThemeProvider>
     </FirstVisitProvider>
     </BrowserRouter>
