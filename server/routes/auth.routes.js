@@ -1,6 +1,6 @@
 //routes/auth.routes.js
 import express from "express";
-import { getMeController, loginPostController, logoutController, resendOtpController, sendOtpController, signupController, verifyOtpController } from "../controllers/auth.controller.js";
+import { forgotPasswordController, getMeController, loginPostController, logoutController, resendOtpController, resetPasswordController, sendOtpController, signupController, verifyOtpController, verifyResetOtpController } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
@@ -19,6 +19,15 @@ router.post("/verify-otp", verifyOtpController);
 
 // POST /api/auth/resend-otp - Resend OTP with cooldown handling
 router.post("/resend-otp", resendOtpController);
+
+// POST /api/auth/forgot-password - Send reset-password OTP
+router.post("/forgot-password", forgotPasswordController);
+
+// POST /api/auth/verify-reset-otp - Verify reset-password OTP
+router.post("/verify-reset-otp", verifyResetOtpController);
+
+// POST /api/auth/reset-password - Verify OTP and reset password
+router.post("/reset-password", resetPasswordController);
 
 // GET /api/auth/me - Verify token and get current user
 router.get("/me", protect, getMeController);

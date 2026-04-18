@@ -26,6 +26,21 @@ export const resendOtp = async (payload) => {
   return response.data;
 };
 
+export const forgotPassword = async (payload) => {
+  const response = await axiosInstance.post("auth/forgot-password", payload);
+  return response.data;
+};
+
+export const verifyResetOtp = async (payload) => {
+  const response = await axiosInstance.post("auth/verify-reset-otp", payload);
+  return response.data;
+};
+
+export const resetPassword = async (payload) => {
+  const response = await axiosInstance.post("auth/reset-password", payload);
+  return response.data;
+};
+
 export const getCurrentUser = async () => {
   const response = await axiosInstance.get("auth/me");
   return response.data;

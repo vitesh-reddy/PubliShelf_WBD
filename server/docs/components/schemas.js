@@ -241,6 +241,22 @@ export const schemas = {
       otp: { type: "string", example: "123456" }
     }
   },
+  ForgotPasswordRequest: {
+    type: "object",
+    required: ["email"],
+    properties: {
+      email: { type: "string", format: "email" }
+    }
+  },
+  ResetPasswordRequest: {
+    type: "object",
+    required: ["email", "otp", "newPassword"],
+    properties: {
+      email: { type: "string", format: "email" },
+      otp: { type: "string", example: "123456" },
+      newPassword: { type: "string", format: "password" }
+    }
+  },
   PublishBookRequest: {
     type: "object",
     required: ["title", "author", "price", "quantity"],

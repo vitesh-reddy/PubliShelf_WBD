@@ -17,6 +17,8 @@ const roleModels = {
   manager: Manager,
 };
 
+const normalizePurpose = (purpose) => (purpose === "forgot-password" ? "reset_password" : purpose || "signup");
+
 const getRoleModel = (role) => roleModels[role] || null;
 
 const buildDisplayName = (userData) => {
@@ -114,9 +116,10 @@ export const signupUser = async ({ role, firstname, lastname, publishingHouse, e
 };
 
 export const issueOtp = async ({ email, purpose = "signup", role = "", displayName = "", force = false }) => {
+  const normalizedPurpose = normalizePurpose(purpose);
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
-  const existingOtp = await EmailOtp.findOne({ email: normalizedEmail, purpose });
+  const existingOtp = await EmailOtp.findOne({ email: normalizedEmail, purpose: normalizedPurpose });
 
   if (existingOtp && !force) {
     const timeSinceLastSend = existingOtp.lastSentAt ? now.getTime() - existingOtp.lastSentAt.getTime() : OTP_RESEND_COOLDOWN_MS;
@@ -136,10 +139,10 @@ export const issueOtp = async ({ email, purpose = "signup", role = "", displayNa
   const expiresAt = new Date(now.getTime() + OTP_EXPIRY_MS);
 
   const otpDoc = await EmailOtp.findOneAndUpdate(
-    { email: normalizedEmail, purpose },
+    { email: normalizedEmail, purpose: normalizedPurpose },
     {
       email: normalizedEmail,
-      purpose,
+      purpose: normalizedPurpose,
       otpHash,
       expiresAt,
       attempts: 0,
@@ -156,7 +159,7 @@ export const issueOtp = async ({ email, purpose = "signup", role = "", displayNa
       to: normalizedEmail,
       name: displayName,
       otp,
-      purpose,
+      purpose: normalizedPurpose,
       expiresInMinutes: 10,
     });
   } catch (error) {
@@ -168,24 +171,25 @@ export const issueOtp = async ({ email, purpose = "signup", role = "", displayNa
   return {
     success: true,
     code: 200,
-    message: purpose === "forgot-password" ? "OTP sent for password reset" : "OTP sent successfully",
+    message: normalizedPurpose === "reset_password" ? "OTP sent for password reset" : "OTP sent successfully",
     data: {
       email: normalizedEmail,
-      purpose,
+      purpose: normalizedPurpose,
       expiresAt,
       resendCooldownSeconds: Math.ceil(OTP_RESEND_COOLDOWN_MS / 1000),
     },
   };
 };
 
-export const verifyOtp = async ({ email, otp, purpose = "signup", role }) => {
+export const verifyOtp = async ({ email, otp, purpose = "signup", role, consume = true }) => {
+  const normalizedPurpose = normalizePurpose(purpose);
   const normalizedEmail = normalizeEmail(email);
 
   if (!normalizedEmail || !otp) {
     return toErrorResult(400, "Email and OTP are required");
   }
 
-  const otpRecord = await EmailOtp.findOne({ email: normalizedEmail, purpose });
+  const otpRecord = await EmailOtp.findOne({ email: normalizedEmail, purpose: normalizedPurpose });
   if (!otpRecord) {
     return toErrorResult(404, "OTP expired or not found. Please resend the code.");
   }
@@ -207,7 +211,7 @@ export const verifyOtp = async ({ email, otp, purpose = "signup", role }) => {
     return toErrorResult(400, "Invalid OTP");
   }
 
-  if (purpose === "signup") {
+  if (normalizedPurpose === "signup") {
     const targetRole = role || otpRecord.role;
     const Model = getRoleModel(targetRole);
 
@@ -231,20 +235,23 @@ export const verifyOtp = async ({ email, otp, purpose = "signup", role }) => {
     await user.save();
   }
 
-  await EmailOtp.deleteOne({ _id: otpRecord._id });
+  if (consume) {
+    await EmailOtp.deleteOne({ _id: otpRecord._id });
+  }
 
   return {
     success: true,
     code: 200,
-    message: purpose === "forgot-password" ? "OTP verified" : "Email verified successfully",
+    message: normalizedPurpose === "reset_password" ? "OTP verified" : "Email verified successfully",
   };
 };
 
 export const resendOtp = async ({ email, purpose = "signup", role }) => {
+  const normalizedPurpose = normalizePurpose(purpose);
   const normalizedEmail = normalizeEmail(email);
   const existingAccount = await findAnyUserByEmail(normalizedEmail);
 
-  if (purpose === "signup") {
+  if (normalizedPurpose === "signup") {
     if (!existingAccount) {
       return toErrorResult(404, "Account not found. Please sign up again.");
     }
@@ -252,14 +259,76 @@ export const resendOtp = async ({ email, purpose = "signup", role }) => {
     if (existingAccount.user?.isVerified === true) {
       return toErrorResult(409, "Account is already verified");
     }
+  } else if (normalizedPurpose === "reset_password" && !existingAccount) {
+    return toErrorResult(404, "Email is not registered");
   }
 
   const displayName = existingAccount?.user ? buildDisplayName(existingAccount.user) : "there";
 
   return issueOtp({
     email: normalizedEmail,
-    purpose,
+    purpose: normalizedPurpose,
     role: role || existingAccount?.role || "",
     displayName,
   });
+};
+
+const findUserModelByEmail = async (email) => {
+  const normalizedEmail = normalizeEmail(email);
+
+  for (const [role, Model] of Object.entries(roleModels)) {
+    const user = await Model.findOne({ email: normalizedEmail });
+    if (user) {
+      return { role, Model, user };
+    }
+  }
+
+  return null;
+};
+
+export const requestPasswordResetOtp = async ({ email }) => {
+  const normalizedEmail = normalizeEmail(email);
+  const userRecord = await findUserModelByEmail(normalizedEmail);
+
+  if (!userRecord) {
+    return toErrorResult(404, "Email is not registered");
+  }
+
+  return issueOtp({
+    email: normalizedEmail,
+    purpose: "reset_password",
+    role: userRecord.role,
+    displayName: buildDisplayName(userRecord.user),
+  });
+};
+
+export const verifyPasswordResetOtp = async ({ email, otp }) => {
+  return verifyOtp({ email, otp, purpose: "reset_password", consume: false });
+};
+
+export const resetPassword = async ({ email, otp, newPassword }) => {
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!newPassword || newPassword.trim().length < 3) {
+    return toErrorResult(400, "Password must be at least 3 characters long");
+  }
+
+  const otpCheck = await verifyOtp({ email: normalizedEmail, otp, purpose: "reset_password", consume: true });
+  if (!otpCheck.success) {
+    return otpCheck;
+  }
+
+  const userRecord = await findUserModelByEmail(normalizedEmail);
+  if (!userRecord) {
+    return toErrorResult(404, "Email is not registered");
+  }
+
+  userRecord.user.password = await bcrypt.hash(newPassword, 10);
+  await userRecord.user.save();
+
+  return {
+    success: true,
+    code: 200,
+    message: "Password reset successfully",
+  };
 };

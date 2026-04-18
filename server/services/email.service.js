@@ -22,12 +22,12 @@ const escapeHtml = (value) => String(value || "")
   .replace(/'/g, "&#39;");
 
 const getSubject = (purpose) => {
-  if (purpose === "forgot-password") return "Your PubliShelf password reset OTP";
+  if (purpose === "reset_password" || purpose === "forgot-password") return "Your PubliShelf password reset OTP";
   return "Verify your PubliShelf email address";
 };
 
 const getContextText = (purpose) => {
-  if (purpose === "forgot-password") {
+  if (purpose === "reset_password" || purpose === "forgot-password") {
     return "You requested a password reset for your PubliShelf account.";
   }
   return "Use this code to finish creating your PubliShelf account.";

@@ -10,6 +10,7 @@ import { useNavigate, Link } from "react-router-dom";
 
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from "../../../components/ui/AlertDialog";
 import { AuthHeader, TextInput, PasswordField, ErrorMessage } from '../components';
+import ForgotPassword from "../forgot-password/ForgotPassword";
 import { emailRules, passwordRules } from '../validations';
 import Pagination from "../../../components/Pagination.jsx";
 
@@ -23,6 +24,7 @@ const Login = () => {
   const [serverError, setServerError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [modalMode, setModalMode] = useState(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const [alertDialog, setAlertDialog] = useState({
     open: false,
@@ -153,6 +155,10 @@ const Login = () => {
     return () => document.removeEventListener("click", closeOnBackdrop);
   }, [modalMode]);
 
+  if (showForgotPassword) {
+    return <ForgotPassword onBackToLogin={() => setShowForgotPassword(false)} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50 to-white bg-gray-50">
       <div className="max-w-md w-full">
@@ -199,9 +205,9 @@ const Login = () => {
                 />
                 <label className="ml-2 text-sm text-gray-700 cursor-pointer">Remember me</label>
               </div>
-              <Link to="/forgot-password" className="text-sm font-medium text-purple-600 hover:text-purple-500">
+              <button type="button" onClick={() => setShowForgotPassword(true)} className="text-sm font-medium text-purple-600 hover:text-purple-500">
                 Forgot password?
-              </Link>
+              </button>
             </div>
 
             <button

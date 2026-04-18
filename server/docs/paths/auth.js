@@ -107,6 +107,89 @@ export const authPaths = {
       }
     }
   },
+  "/api/auth/forgot-password": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Send a reset-password OTP to a registered email",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ForgotPasswordRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "Reset OTP sent",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        },
+        404: {
+          description: "Email not registered",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/verify-reset-otp": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Verify a password reset OTP without consuming it",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/OTPVerifyRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "Reset OTP verified",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/reset-password": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Verify OTP and reset password",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ResetPasswordRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "Password reset successfully",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
   "/api/auth/login": {
     post: {
       tags: ["Authentication"],

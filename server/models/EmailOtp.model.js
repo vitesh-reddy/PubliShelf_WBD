@@ -6,7 +6,7 @@ const emailOtpSchema = new mongoose.Schema(
     purpose: {
       type: String,
       required: true,
-      enum: ["signup", "forgot-password"],
+      enum: ["signup", "reset_password", "forgot-password"],
       index: true,
     },
     otpHash: { type: String, required: true },

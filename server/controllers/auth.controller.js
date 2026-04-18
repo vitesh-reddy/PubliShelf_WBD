@@ -1,6 +1,6 @@
 //controllers/auth.controller.js
 import { loginUser } from "../services/auth.services.js";
-import { issueOtp, resendOtp, signupUser, verifyOtp } from "../services/otp.services.js";
+import { issueOtp, resendOtp, requestPasswordResetOtp, resetPassword, signupUser, verifyOtp, verifyPasswordResetOtp } from "../services/otp.services.js";
 import { getCookieOptions } from "../config/cookie.js";
 
 export const loginPostController = async (req, res) => {
@@ -184,6 +184,79 @@ export const resendOtpController = async (req, res) => {
     return res.status(200).json(result);
   } catch (error) {
     console.error("Error in resendOtpController:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+      data: null,
+    });
+  }
+};
+
+export const forgotPasswordController = async (req, res) => {
+  try {
+    const result = await requestPasswordResetOtp({ email: req.body?.email });
+
+    if (!result.success) {
+      return res.status(result.code || 400).json({
+        success: false,
+        message: result.message,
+        data: result.data || null,
+      });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in forgotPasswordController:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+      data: null,
+    });
+  }
+};
+
+export const verifyResetOtpController = async (req, res) => {
+  try {
+    const result = await verifyPasswordResetOtp({ email: req.body?.email, otp: req.body?.otp });
+
+    if (!result.success) {
+      return res.status(result.code || 400).json({
+        success: false,
+        message: result.message,
+        data: result.data || null,
+      });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in verifyResetOtpController:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+      data: null,
+    });
+  }
+};
+
+export const resetPasswordController = async (req, res) => {
+  try {
+    const result = await resetPassword({
+      email: req.body?.email,
+      otp: req.body?.otp,
+      newPassword: req.body?.newPassword,
+    });
+
+    if (!result.success) {
+      return res.status(result.code || 400).json({
+        success: false,
+        message: result.message,
+        data: result.data || null,
+      });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in resetPasswordController:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error. Please try again later.",
