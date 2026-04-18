@@ -1,5 +1,6 @@
 //controllers/auth.controller.js
 import { loginUser } from "../services/auth.services.js";
+import { googleAuthUser } from "../services/googleAuth.services.js";
 import { issueOtp, resendOtp, requestPasswordResetOtp, resetPassword, signupUser, verifyOtp, verifyPasswordResetOtp } from "../services/otp.services.js";
 import { getCookieOptions } from "../config/cookie.js";
 
@@ -82,6 +83,43 @@ export const logoutController = async (req, res) => {
       success: false,
       message: "Internal server error. Please try again later.",
       data: null
+    });
+  }
+};
+
+export const googleAuthController = async (req, res) => {
+  try {
+    const result = await googleAuthUser({
+      credential: req.body?.credential,
+      role: req.body?.role,
+    });
+
+    if (!result.success) {
+      return res.status(result.code || 400).json({
+        success: false,
+        message: result.message,
+        data: result.data || null,
+      });
+    }
+
+    if (result.token) {
+      res.cookie("token", result.token, getCookieOptions());
+    }
+
+    return res.status(result.code === 202 ? 202 : 200).json({
+      success: true,
+      message: result.message,
+      data: {
+        user: result.user,
+        authenticated: Boolean(result.token),
+      },
+    });
+  } catch (error) {
+    console.error("Error in googleAuthController:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+      data: null,
     });
   }
 };

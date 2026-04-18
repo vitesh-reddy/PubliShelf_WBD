@@ -1,6 +1,6 @@
 //routes/auth.routes.js
 import express from "express";
-import { forgotPasswordController, getMeController, loginPostController, logoutController, resendOtpController, resetPasswordController, sendOtpController, signupController, verifyOtpController, verifyResetOtpController } from "../controllers/auth.controller.js";
+import { forgotPasswordController, getMeController, googleAuthController, loginPostController, logoutController, resendOtpController, resetPasswordController, sendOtpController, signupController, verifyOtpController, verifyResetOtpController } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
@@ -10,6 +10,9 @@ router.post("/login", loginPostController);
 
 // POST /api/auth/signup - Create a pending account and send OTP
 router.post("/signup", signupController);
+
+// POST /api/auth/google - Sign in or sign up with Google OAuth
+router.post("/google", googleAuthController);
 
 // POST /api/auth/send-otp - Send a verification OTP
 router.post("/send-otp", sendOtpController);

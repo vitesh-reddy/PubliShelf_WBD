@@ -19,6 +19,10 @@ export const loginUser = async (email, password) => {
         return { token: null, user: null, code: 403, message: "Please verify your email before logging in." };
       }
 
+      if (!buyerDoc.password) {
+        return { token: null, user: null, code: 403, message: "Please continue with Google to sign in." };
+      }
+
       const isPasswordValid = await bcrypt.compare(password, buyerDoc.password);
       if (!isPasswordValid) return { token: null, user: null, code: 401 };
       const { password: _pw, ...userWithoutPassword } = buyerDoc;
@@ -37,6 +41,10 @@ export const loginUser = async (email, password) => {
     if (publisherDoc) {
       if (publisherDoc.isVerified === false) {
         return { token: null, user: null, code: 403, message: "Please verify your email before logging in." };
+      }
+
+      if (!publisherDoc.password) {
+        return { token: null, user: null, code: 403, message: "Please continue with Google to sign in." };
       }
 
       // Check if publisher is banned (new schema or legacy)
@@ -119,6 +127,10 @@ export const loginUser = async (email, password) => {
     if (managerDoc) {
       if (managerDoc.isVerified === false) {
         return { token: null, user: null, code: 403, message: "Please verify your email before logging in." };
+      }
+
+      if (!managerDoc.password) {
+        return { token: null, user: null, code: 403, message: "Please continue with Google to sign in." };
       }
 
       // Check if manager is banned

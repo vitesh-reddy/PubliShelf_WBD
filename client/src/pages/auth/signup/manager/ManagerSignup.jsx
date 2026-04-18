@@ -1,13 +1,16 @@
 //client/src/pages/auth/signup/manager/ManagerSignup.jsx
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { signupUser, verifyOtp, resendOtp } from "../../../../services/auth.services.js";
-import { AuthHeader, NameFields, TextInput, PasswordField, PasswordStrengthMeter, ConfirmPasswordField, TermsCheckbox, OtpVerificationForm } from '../../components';
+import { signupUser, verifyOtp, resendOtp, googleAuth } from "../../../../services/auth.services.js";
+import { AuthHeader, NameFields, TextInput, PasswordField, PasswordStrengthMeter, ConfirmPasswordField, TermsCheckbox, OtpVerificationForm, GoogleAuthButton } from '../../components';
+import { applyAuthSession } from "../../../../utils/authSession.util.js";
 
 const ManagerSignup = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const {
     register,
@@ -21,6 +24,7 @@ const ManagerSignup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showOtpStep, setShowOtpStep] = useState(false);
   const [otpEmail, setOtpEmail] = useState("");
   const [otpCooldown, setOtpCooldown] = useState(0);
@@ -35,6 +39,11 @@ const ManagerSignup = () => {
 
     return () => clearInterval(intervalId);
   }, [showOtpStep, otpCooldown]);
+
+  const handleAuthenticatedSession = (userData) => {
+    applyAuthSession(dispatch, userData);
+    navigate(`/${userData.role}/dashboard`);
+  };
 
   const onSubmit = async (data) => {
     setServerError("");
@@ -118,6 +127,42 @@ const ManagerSignup = () => {
       return false;
     } finally {
       setIsResendingOtp(false);
+    }
+  };
+
+  const handleGoogleSignIn = async (credential) => {
+    setServerError("");
+    setIsGoogleLoading(true);
+
+    try {
+      const response = await googleAuth({ credential, role: "manager" });
+
+      if (response.success) {
+        const userData = response.data?.user;
+
+        if (response.data?.authenticated && userData) {
+          handleAuthenticatedSession(userData);
+          toast.success(response.message || "Google sign-in successful");
+        } else {
+          const message = response.message || "Google account created, but approval is pending.";
+          setServerError(message);
+          toast.info(message);
+          navigate('/auth/login');
+        }
+
+        return;
+      }
+
+      const message = response.message || "Google sign-in failed.";
+      setServerError(message);
+      toast.error(message);
+    } catch (error) {
+      console.error("Error during Google sign-in:", error);
+      const message = error?.response?.data?.message || "Google sign-in failed. Please try again.";
+      setServerError(message);
+      toast.error(message);
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -215,6 +260,25 @@ const ManagerSignup = () => {
               >
                 {isLoading ? "Creating Account..." : "Create Manager Account"}
               </button>
+
+              <div className="relative pt-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+              </div>
+
+              <GoogleAuthButton
+                loading={isLoading || isGoogleLoading}
+                onSuccess={handleGoogleSignIn}
+                onError={(error) => {
+                  const message = error?.message || "Google sign-in was cancelled or failed.";
+                  setServerError(message);
+                  toast.error(message);
+                }}
+              />
 
             </div>
           </form>

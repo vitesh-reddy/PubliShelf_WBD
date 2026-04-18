@@ -11,6 +11,11 @@ export const signupUser = async (payload) => {
   return response.data;
 };
 
+export const googleAuth = async (payload) => {
+  const response = await axiosInstance.post("auth/google", payload);
+  return response.data;
+};
+
 export const sendOtp = async (payload) => {
   const response = await axiosInstance.post("auth/send-otp", payload);
   return response.data;
