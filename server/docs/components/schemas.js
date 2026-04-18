@@ -214,6 +214,18 @@ export const schemas = {
       password: { type: "string", format: "password" }
     }
   },
+  AuthSignupRequest: {
+    type: "object",
+    required: ["role", "firstname", "lastname", "email", "password"],
+    properties: {
+      role: { type: "string", enum: ["buyer", "publisher", "manager"] },
+      firstname: { type: "string" },
+      lastname: { type: "string" },
+      publishingHouse: { type: "string" },
+      email: { type: "string", format: "email" },
+      password: { type: "string", format: "password" }
+    }
+  },
   OTPRequest: {
     type: "object",
     required: ["email"],

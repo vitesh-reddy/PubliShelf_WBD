@@ -6,6 +6,9 @@ const managerSchema = new mongoose.Schema(
     lastname: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    isVerified: { type: Boolean, default: false },
+    verifiedAt: { type: Date, default: null },
+    otpExpiry: { type: Date, default: null },
     
     // Moderation tracking (admin approval flow)
     moderation: {

@@ -1,4 +1,112 @@
 export const authPaths = {
+  "/api/auth/signup": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Create a pending account and send a verification OTP",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/AuthSignupRequest" }
+          }
+        }
+      },
+      responses: {
+        201: {
+          description: "Registration started",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        },
+        400: {
+          description: "Invalid signup payload",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/send-otp": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Send a verification OTP",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/OTPRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "OTP sent",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/verify-otp": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Verify a submitted OTP",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/OTPVerifyRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "OTP verified",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/auth/resend-otp": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Resend verification OTP with cooldown checks",
+      security: [],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/OTPRequest" }
+          }
+        }
+      },
+      responses: {
+        200: {
+          description: "OTP resent",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+            }
+          }
+        }
+      }
+    }
+  },
   "/api/auth/login": {
     post: {
       tags: ["Authentication"],

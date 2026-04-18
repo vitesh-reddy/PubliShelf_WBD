@@ -1,5 +1,6 @@
 //controllers/auth.controller.js
 import { loginUser } from "../services/auth.services.js";
+import { issueOtp, resendOtp, signupUser, verifyOtp } from "../services/otp.services.js";
 import { getCookieOptions } from "../config/cookie.js";
 
 export const loginPostController = async (req, res) => {
@@ -81,6 +82,112 @@ export const logoutController = async (req, res) => {
       success: false,
       message: "Internal server error. Please try again later.",
       data: null
+    });
+  }
+};
+
+export const signupController = async (req, res) => {
+  try {
+    const result = await signupUser(req.body || {});
+
+    if (!result.success) {
+      return res.status(result.code || 400).json({
+        success: false,
+        message: result.message,
+        data: result.data || null,
+      });
+    }
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error("Error in signupController:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+      data: null,
+    });
+  }
+};
+
+export const sendOtpController = async (req, res) => {
+  try {
+    const result = await issueOtp({
+      email: req.body?.email,
+      purpose: req.body?.purpose || "signup",
+      role: req.body?.role,
+      displayName: req.body?.name || req.body?.displayName || "",
+    });
+
+    if (!result.success) {
+      return res.status(result.code || 400).json({
+        success: false,
+        message: result.message,
+        data: result.data || null,
+      });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in sendOtpController:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+      data: null,
+    });
+  }
+};
+
+export const verifyOtpController = async (req, res) => {
+  try {
+    const result = await verifyOtp({
+      email: req.body?.email,
+      otp: req.body?.otp,
+      purpose: req.body?.purpose || "signup",
+      role: req.body?.role,
+    });
+
+    if (!result.success) {
+      return res.status(result.code || 400).json({
+        success: false,
+        message: result.message,
+        data: result.data || null,
+      });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in verifyOtpController:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+      data: null,
+    });
+  }
+};
+
+export const resendOtpController = async (req, res) => {
+  try {
+    const result = await resendOtp({
+      email: req.body?.email,
+      purpose: req.body?.purpose || "signup",
+      role: req.body?.role,
+    });
+
+    if (!result.success) {
+      return res.status(result.code || 400).json({
+        success: false,
+        message: result.message,
+        data: result.data || null,
+      });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in resendOtpController:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+      data: null,
     });
   }
 };

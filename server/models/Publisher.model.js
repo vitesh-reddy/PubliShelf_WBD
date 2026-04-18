@@ -7,6 +7,9 @@ const publisherSchema = new mongoose.Schema(
     publishingHouse: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    isVerified: { type: Boolean, default: false },
+    verifiedAt: { type: Date, default: null },
+    otpExpiry: { type: Date, default: null },
     books: [{ type: mongoose.Schema.Types.ObjectId, ref: "Book" }],
 
     // Optional contact/business fields used by Admin UI

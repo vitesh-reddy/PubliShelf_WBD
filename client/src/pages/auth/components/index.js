@@ -7,3 +7,4 @@ export { ErrorMessage } from './ErrorMessage';
 export { AuthFormCard } from './AuthFormCard';
 export { NameFields } from './NameFields';
 export { ConfirmPasswordField } from './ConfirmPasswordField';
+export { OtpVerificationForm } from './OtpVerificationForm';

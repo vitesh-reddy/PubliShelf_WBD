@@ -1,26 +1,41 @@
 //client/src/pages/auth/signup/publisher/PublisherSignup.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
-import { signupPublisher } from "../../../../services/publisher.services.js";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle} from "../../../../components/ui/AlertDialog";
-import { AuthHeader, TextInput, PasswordField, PasswordStrengthMeter, TermsCheckbox, NameFields, ConfirmPasswordField } from '../../components';
+import { toast } from "sonner";
+import { signupUser, verifyOtp, resendOtp } from "../../../../services/auth.services.js";
+import { AuthHeader, TextInput, PasswordField, PasswordStrengthMeter, TermsCheckbox, NameFields, ConfirmPasswordField, OtpVerificationForm } from '../../components';
 
 const PublisherSignup = () => {
-  const { register, handleSubmit, watch, formState: { errors }, trigger } = useForm({ mode: 'onBlur' });
+  const { register, handleSubmit, watch, formState: { errors }, trigger } = useForm({ mode: 'onBlur', shouldUnregister: false });
   const [serverError, setServerError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [showOtpStep, setShowOtpStep] = useState(false);
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCooldown, setOtpCooldown] = useState(0);
   const navigate = useNavigate();
 
   const passwordValue = watch('password') || '';
+
+  useEffect(() => {
+    if (!showOtpStep || otpCooldown <= 0) return undefined;
+
+    const intervalId = setInterval(() => {
+      setOtpCooldown((current) => (current > 0 ? current - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [showOtpStep, otpCooldown]);
 
   const onSubmit = async (data) => {
     setServerError('');
     const { firstname, lastname, publishingHouse, businessEmail, password } = data;
     setIsLoading(true);
     try {
-      const response = await signupPublisher({
+      const response = await signupUser({
+        role: 'publisher',
         firstname: firstname.trim(),
         lastname: lastname.trim(),
         publishingHouse: publishingHouse.trim(),
@@ -28,16 +43,91 @@ const PublisherSignup = () => {
         password,
       });
       if (response.success) {
-        setShowSuccessDialog(true);
+        setOtpEmail(businessEmail.trim().toLowerCase());
+        setShowOtpStep(true);
+        setOtpCooldown(60);
+        toast.success(response.message || 'OTP sent to your email');
       } else {
         setServerError(response.message || 'An unexpected error occurred.');
+        toast.error(response.message || 'An unexpected error occurred.');
       }
     } catch (e) {
       console.error('Error during signup:', e);
       setServerError('An error occurred. Please try again later.');
+      toast.error('An error occurred. Please try again later.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleVerifyOtp = async (otp) => {
+    if (!otpEmail) return;
+
+    setServerError('');
+    setIsVerifyingOtp(true);
+
+    try {
+      const response = await verifyOtp({
+        email: otpEmail,
+        otp,
+        role: 'publisher',
+        purpose: 'signup',
+      });
+
+      if (response.success) {
+        toast.success(response.message || 'Email verified successfully');
+        navigate('/auth/login');
+        return;
+      }
+
+      setServerError(response.message || 'Failed to verify OTP');
+      toast.error(response.message || 'Failed to verify OTP');
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setServerError('Failed to verify OTP. Please try again.');
+      toast.error('Failed to verify OTP. Please try again.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!otpEmail) return;
+
+    setServerError('');
+    setIsResendingOtp(true);
+
+    try {
+      const response = await resendOtp({
+        email: otpEmail,
+        role: 'publisher',
+        purpose: 'signup',
+      });
+
+      if (response.success) {
+        setOtpCooldown(60);
+        toast.success(response.message || 'OTP resent successfully');
+        return true;
+      }
+
+      setServerError(response.message || 'Failed to resend OTP');
+      toast.error(response.message || 'Failed to resend OTP');
+      return false;
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      setServerError('Failed to resend OTP. Please try again.');
+      toast.error('Failed to resend OTP. Please try again.');
+      return false;
+    } finally {
+      setIsResendingOtp(false);
+    }
+  };
+
+  const handleBackToSignup = () => {
+    setServerError('');
+    setShowOtpStep(false);
+    setOtpEmail('');
+    setOtpCooldown(0);
   };
 
   return (
@@ -48,121 +138,118 @@ const PublisherSignup = () => {
           subtitle={<span>Already have an account? <Link to="/auth/login" className="text-purple-600 hover:text-purple-500 font-medium">Sign in</Link></span>}
         />
 
-        <form id="signupForm" onSubmit={handleSubmit(onSubmit)}>
-          <div className="bg-white p-8 shadow-lg rounded-xl space-y-6 animate-fade-in">
-            <NameFields
-              register={register}
-              trigger={trigger}
-              errors={errors}
-              firstNameRules={{
-                required: 'First name is required.',
-                validate: {
-                  notEmpty: v => v.trim() !== '' || 'First name cannot be empty.',
-                  alphabetsOnly: v => /^[A-Za-z\s]+$/.test(v) || 'Only alphabets and spaces allowed.',
-                }
-              }}
-              lastNameRules={{
-                required: 'Last name is required.',
-                validate: {
-                  notEmpty: v => v.trim() !== '' || 'Last name cannot be empty.',
-                  alphabetsOnly: v => /^[A-Za-z\s]+$/.test(v) || 'Only alphabets and spaces allowed.',
-                }
-              }}
-            />
+        {!showOtpStep ? (
+          <form id="signupForm" onSubmit={handleSubmit(onSubmit)}>
+            <div className="bg-white p-8 shadow-lg rounded-xl space-y-6 animate-fade-in">
+              <NameFields
+                register={register}
+                trigger={trigger}
+                errors={errors}
+                firstNameRules={{
+                  required: 'First name is required.',
+                  validate: {
+                    notEmpty: v => v.trim() !== '' || 'First name cannot be empty.',
+                    alphabetsOnly: v => /^[A-Za-z\s]+$/.test(v) || 'Only alphabets and spaces allowed.',
+                  }
+                }}
+                lastNameRules={{
+                  required: 'Last name is required.',
+                  validate: {
+                    notEmpty: v => v.trim() !== '' || 'Last name cannot be empty.',
+                    alphabetsOnly: v => /^[A-Za-z\s]+$/.test(v) || 'Only alphabets and spaces allowed.',
+                  }
+                }}
+              />
 
-            <TextInput
-              label="Publishing House Name"
-              name="publishingHouse"
-              register={register}
-              rules={{
-                required: 'Publishing house name is required.',
-                validate: {
-                  notEmpty: v => v.trim() !== '' || 'Publishing house cannot be empty.',
-                  alphabetsOnly: v => /^[A-Za-z0-9\s]+$/.test(v) || 'Only alphabets and numbers allowed.',
-                }
-              }}
-              error={errors.publishingHouse}
-              onBlurTrigger={trigger}
-            />
+              <TextInput
+                label="Publishing House Name"
+                name="publishingHouse"
+                register={register}
+                rules={{
+                  required: 'Publishing house name is required.',
+                  validate: {
+                    notEmpty: v => v.trim() !== '' || 'Publishing house cannot be empty.',
+                    alphabetsOnly: v => /^[A-Za-z0-9\s]+$/.test(v) || 'Only alphabets and numbers allowed.',
+                  }
+                }}
+                error={errors.publishingHouse}
+                onBlurTrigger={trigger}
+              />
 
-            <TextInput
-              label="Business Email"
-              name="businessEmail"
-              type="email"
-              placeholder="publisher@publishelf.com"
-              iconClass="fas fa-envelope"
-              register={register}
-              rules={{
-                required: 'Business email is required.',
-                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address.' },
-                validate: { noUpper: v => v === v.toLowerCase() || 'Uppercase letters are not allowed.' }
-              }}
-              error={errors.businessEmail}
-              onBlurTrigger={trigger}
-            />
+              <TextInput
+                label="Business Email"
+                name="businessEmail"
+                type="email"
+                placeholder="publisher@publishelf.com"
+                iconClass="fas fa-envelope"
+                register={register}
+                rules={{
+                  required: 'Business email is required.',
+                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address.' },
+                  validate: { noUpper: v => v === v.toLowerCase() || 'Uppercase letters are not allowed.' }
+                }}
+                error={errors.businessEmail}
+                onBlurTrigger={trigger}
+              />
 
-            <PasswordField
-              label="Password"
-              name="password"
-              register={register}
-              rules={{ required: 'Password is required.', minLength: { value: 3, message: 'Password must be at least 3 characters long.' } }}
-              error={errors.password}
-              onBlurTrigger={() => { trigger('password'); trigger('confirmPassword'); }}
-            />
+              <PasswordField
+                label="Password"
+                name="password"
+                register={register}
+                rules={{ required: 'Password is required.', minLength: { value: 3, message: 'Password must be at least 3 characters long.' } }}
+                error={errors.password}
+                onBlurTrigger={() => { trigger('password'); trigger('confirmPassword'); }}
+              />
 
-            <PasswordStrengthMeter password={passwordValue} />
+              <PasswordStrengthMeter password={passwordValue} />
 
-            <ConfirmPasswordField
-              register={register}
-              trigger={trigger}
-              errors={errors}
-              passwordValue={passwordValue}
-            />
+              <ConfirmPasswordField
+                register={register}
+                trigger={trigger}
+                errors={errors}
+                passwordValue={passwordValue}
+              />
 
-            <TermsCheckbox
-              name="termsAccepted"
-              register={register}
-              rules={{ required: 'You must agree to the Terms and Privacy Policy.' }}
-              error={errors.termsAccepted}
-              onBlurTrigger={trigger}
-            />
+              <TermsCheckbox
+                name="termsAccepted"
+                register={register}
+                rules={{ required: 'You must agree to the Terms and Privacy Policy.' }}
+                error={errors.termsAccepted}
+                onBlurTrigger={trigger}
+              />
 
-            {serverError && (
-              <p className="text-red-500 text-sm">{serverError}</p>
-            )}
+              {serverError && (
+                <p className="text-red-500 text-sm">{serverError}</p>
+              )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-sm font-medium text-white 
-                ${isLoading ? 'bg-purple-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'}
-                focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all`}
-            >
-              {isLoading ? 'Creating Account...' : 'Create Publisher Account'}
-            </button>
-          </div>
-        </form>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-sm font-medium text-white 
+                  ${isLoading ? 'bg-purple-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'}
+                  focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all`}
+              >
+                {isLoading ? 'Creating Account...' : 'Create Publisher Account'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <OtpVerificationForm
+            email={otpEmail}
+            title="Confirm your publisher account"
+            description="Enter the 6-digit code we sent to your email to finish signup."
+            contextLabel="publisher signup"
+            cooldownSeconds={otpCooldown}
+            isVerifying={isVerifyingOtp}
+            isResending={isResendingOtp}
+            error={serverError}
+            onBack={handleBackToSignup}
+            onConfirm={handleVerifyOtp}
+            onResend={handleResendOtp}
+          />
+        )}
+
       </div>
-
-      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Signup Received</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your publisher account has been submitted for verification.
-              You’ll be able to log in once a manager approves your account.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => navigate('/auth/login')}>
-              Go to Login
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate('/auth/login')}>
-              OK
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

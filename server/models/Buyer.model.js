@@ -11,6 +11,9 @@ const buyerSchema = new mongoose.Schema({
   lastname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  isVerified: { type: Boolean, default: false },
+  verifiedAt: { type: Date, default: null },
+  otpExpiry: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   cart: [
     {
