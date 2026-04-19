@@ -109,4 +109,15 @@ describe("auth.middleware", () => {
       data: null
     });
   });
+
+  it("checkAdminKey calls next for valid key", () => {
+    const req = { params: { key: "123456" } };
+    const res = createRes();
+    const next = jest.fn();
+
+    checkAdminKey(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
+  });
 });

@@ -1,9 +1,141 @@
 // services/auth.services.js
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import Buyer from "../models/Buyer.model.js";
 import Publisher from "../models/Publisher.model.js";
 import Manager from "../models/Manager.model.js";
 import { generateToken } from "../utils/jwt.js";
+import { sendPasswordResetOtp } from "./otpDelivery.services.js";
+
+const OTP_EXPIRY_MS = 10 * 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
+
+const getOtpDebugPayload = (otp) => {
+  if (process.env.NODE_ENV !== "production") {
+    return { otp };
+  }
+  return {};
+};
+
+const findAuthUserByEmail = async (email) => {
+  const buyer = await Buyer.findOne({ email });
+  if (buyer) return { user: buyer, role: "buyer" };
+
+  const publisher = await Publisher.findOne({ email });
+  if (publisher) return { user: publisher, role: "publisher" };
+
+  const manager = await Manager.findOne({ email });
+  if (manager) return { user: manager, role: "manager" };
+
+  return null;
+};
+
+const ensureOtpState = (user) => {
+  if (!user.authOtp) {
+    user.authOtp = {
+      codeHash: null,
+      purpose: null,
+      expiresAt: null,
+      verifiedAt: null,
+      attempts: 0,
+      requestedAt: null
+    };
+  }
+};
+
+export const requestPasswordResetOtp = async (email) => {
+  const authUser = await findAuthUserByEmail(email);
+  if (!authUser) {
+    // Generic response to prevent email enumeration
+    return { sent: true, message: "If the email exists, an OTP has been generated" };
+  }
+
+  const otp = String(crypto.randomInt(100000, 1000000));
+  const codeHash = await bcrypt.hash(otp, 10);
+
+  ensureOtpState(authUser.user);
+  authUser.user.authOtp.codeHash = codeHash;
+  authUser.user.authOtp.purpose = "password-reset";
+  authUser.user.authOtp.expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
+  authUser.user.authOtp.verifiedAt = null;
+  authUser.user.authOtp.attempts = 0;
+  authUser.user.authOtp.requestedAt = new Date();
+
+  await authUser.user.save();
+  await sendPasswordResetOtp({ email, otp });
+
+  return {
+    sent: true,
+    message: "OTP generated successfully",
+    expiresInSeconds: OTP_EXPIRY_MS / 1000,
+    ...getOtpDebugPayload(otp)
+  };
+};
+
+export const verifyPasswordResetOtp = async (email, otp) => {
+  const authUser = await findAuthUserByEmail(email);
+  if (!authUser) {
+    return { verified: false, code: 404, message: "Invalid email or OTP" };
+  }
+
+  const { user } = authUser;
+  ensureOtpState(user);
+
+  const otpState = user.authOtp;
+
+  if (!otpState.codeHash || otpState.purpose !== "password-reset") {
+    return { verified: false, code: 400, message: "No active OTP request found" };
+  }
+
+  if (otpState.expiresAt && otpState.expiresAt.getTime() < Date.now()) {
+    return { verified: false, code: 400, message: "OTP has expired" };
+  }
+
+  if (otpState.attempts >= OTP_MAX_ATTEMPTS) {
+    return { verified: false, code: 429, message: "OTP attempts exceeded. Please request a new OTP" };
+  }
+
+  const isValid = await bcrypt.compare(otp, otpState.codeHash);
+  if (!isValid) {
+    otpState.attempts += 1;
+    await user.save();
+    return { verified: false, code: 400, message: "Invalid email or OTP" };
+  }
+
+  otpState.verifiedAt = new Date();
+  await user.save();
+
+  return { verified: true, code: 200, message: "OTP verified successfully" };
+};
+
+export const resetPasswordWithOtp = async (email, otp, newPassword) => {
+  if (!newPassword || newPassword.length < 6) {
+    return { reset: false, code: 400, message: "Password must be at least 6 characters long" };
+  }
+
+  const verifyResult = await verifyPasswordResetOtp(email, otp);
+  if (!verifyResult.verified) {
+    return { reset: false, code: verifyResult.code, message: verifyResult.message };
+  }
+
+  const authUser = await findAuthUserByEmail(email);
+  if (!authUser) {
+    return { reset: false, code: 404, message: "Invalid email or OTP" };
+  }
+
+  const { user } = authUser;
+  user.password = await bcrypt.hash(newPassword, 10);
+  ensureOtpState(user);
+  user.authOtp.codeHash = null;
+  user.authOtp.purpose = null;
+  user.authOtp.expiresAt = null;
+  user.authOtp.verifiedAt = null;
+  user.authOtp.attempts = 0;
+  user.authOtp.requestedAt = null;
+  await user.save();
+
+  return { reset: true, code: 200, message: "Password reset successful" };
+};
 
 export const loginUser = async (email, password) => {
   try {

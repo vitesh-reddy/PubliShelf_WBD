@@ -6,6 +6,15 @@ const AddressSchema = new mongoose.Schema({
   phone: { type: String, required: true }
 }, { _id: true });
 
+const AuthOtpSchema = new mongoose.Schema({
+  codeHash: { type: String, default: null },
+  purpose: { type: String, enum: ["password-reset"], default: null },
+  expiresAt: { type: Date, default: null },
+  verifiedAt: { type: Date, default: null },
+  attempts: { type: Number, default: 0 },
+  requestedAt: { type: Date, default: null }
+}, { _id: false });
+
 const buyerSchema = new mongoose.Schema({
   firstname: { type: String, required: true },
   lastname: { type: String, required: true },
@@ -31,7 +40,8 @@ const buyerSchema = new mongoose.Schema({
       orderDate: { type: Date, default: Date.now },
     },
   ],
-  addresses: [AddressSchema]
+  addresses: [AddressSchema],
+  authOtp: { type: AuthOtpSchema, default: () => ({}) }
 });
 
 const Buyer = mongoose.model("Buyer", buyerSchema);

@@ -1,5 +1,14 @@
 import mongoose from "mongoose";
 
+const AuthOtpSchema = new mongoose.Schema({
+  codeHash: { type: String, default: null },
+  purpose: { type: String, enum: ["password-reset"], default: null },
+  expiresAt: { type: Date, default: null },
+  verifiedAt: { type: Date, default: null },
+  attempts: { type: Number, default: 0 },
+  requestedAt: { type: Date, default: null }
+}, { _id: false });
+
 const publisherSchema = new mongoose.Schema(
   {
     firstname: { type: String, required: true },
@@ -32,6 +41,7 @@ const publisherSchema = new mongoose.Schema(
       at: { type: Date, default: null, index: true },
       reason: { type: String, default: null },
     },
+    authOtp: { type: AuthOtpSchema, default: () => ({}) },
   },
   { timestamps: true }
 );

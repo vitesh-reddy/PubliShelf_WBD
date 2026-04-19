@@ -122,4 +122,24 @@ describe("publisher.controller", () => {
     expect(addBookToPublisherMock).toHaveBeenCalledWith("publisher-1", "book-1");
     expect(res.status).toHaveBeenCalledWith(201);
   });
+
+  it("returns 500 when publish flow throws generic error", async () => {
+    createBookMock.mockRejectedValue(new Error("Unexpected failure"));
+
+    const req = {
+      body: { title: "Book", author: "Author", description: "Desc", genre: "Fantasy", price: 10, quantity: 2 },
+      file: { path: "img" },
+      user: { id: "publisher-1" }
+    };
+    const res = createRes();
+
+    await publishBook(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "An error occurred while publishing the book",
+      data: null
+    });
+  });
 });

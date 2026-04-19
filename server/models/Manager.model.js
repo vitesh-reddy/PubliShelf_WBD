@@ -1,5 +1,14 @@
 import mongoose from "mongoose";
 
+const AuthOtpSchema = new mongoose.Schema({
+  codeHash: { type: String, default: null },
+  purpose: { type: String, enum: ["password-reset"], default: null },
+  expiresAt: { type: Date, default: null },
+  verifiedAt: { type: Date, default: null },
+  attempts: { type: Number, default: 0 },
+  requestedAt: { type: Date, default: null }
+}, { _id: false });
+
 const managerSchema = new mongoose.Schema(
   {
     firstname: { type: String, required: true },
@@ -34,7 +43,9 @@ const managerSchema = new mongoose.Schema(
     },
     
     // Activity tracking
-    lastLogin: { type: Date, default: null }
+    lastLogin: { type: Date, default: null },
+
+    authOtp: { type: AuthOtpSchema, default: () => ({}) }
   },
   { timestamps: true }
 );

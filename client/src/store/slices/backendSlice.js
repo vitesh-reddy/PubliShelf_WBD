@@ -18,7 +18,7 @@ export const checkBackendHealth = createAsyncThunk(
 );
 
 const initialState = {
-  isReady: !(import.meta.env.PROD),
+  isReady: !(import.meta?.env?.PROD ?? false),
   isChecking: true,
   error: null,
   attempts: 0,

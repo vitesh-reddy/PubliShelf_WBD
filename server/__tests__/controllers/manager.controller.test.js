@@ -65,6 +65,7 @@ const {
   createManagerSignup,
   updateManagerProfileController,
   getPendingAuctions,
+  getApprovedAuctions,
   approveAuctionController,
   getPendingPublishers,
   approvePublisherController
@@ -154,6 +155,60 @@ describe("manager.controller", () => {
     });
   });
 
+  it("returns 400 when current password is missing on profile update", async () => {
+    const req = {
+      user: { id: "manager-1" },
+      body: { firstname: "Alex" }
+    };
+    const res = createRes();
+
+    await updateManagerProfileController(req, res);
+
+    expect(updateManagerProfileMock).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Current password is required",
+      data: null
+    });
+  });
+
+  it("returns 400 when new password confirmation mismatches", async () => {
+    const req = {
+      user: { id: "manager-1" },
+      body: { currentPassword: "old", newPassword: "new1", confirmPassword: "new2" }
+    };
+    const res = createRes();
+
+    await updateManagerProfileController(req, res);
+
+    expect(updateManagerProfileMock).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "New passwords do not match",
+      data: null
+    });
+  });
+
+  it("returns 401 when current password is incorrect", async () => {
+    updateManagerProfileMock.mockRejectedValue(new Error("Current password is incorrect"));
+    const req = {
+      user: { id: "manager-1" },
+      body: { currentPassword: "bad" }
+    };
+    const res = createRes();
+
+    await updateManagerProfileController(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Current password is incorrect",
+      data: null
+    });
+  });
+
   it("returns pending auctions", async () => {
     getAllPendingAuctionsMock.mockResolvedValue([{ _id: "auction-1" }]);
 
@@ -183,6 +238,36 @@ describe("manager.controller", () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
+  it("returns 401 when approving auction without manager id", async () => {
+    const req = { params: { id: "auction-1" }, user: {} };
+    const res = createRes();
+
+    await approveAuctionController(req, res);
+
+    expect(approveAuctionMock).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Not authorized: missing manager id",
+      data: null
+    });
+  });
+
+  it("returns 401 for approved auctions listing when manager id is missing", async () => {
+    const req = { user: {} };
+    const res = createRes();
+
+    await getApprovedAuctions(req, res);
+
+    expect(getAllApprovedAuctionsMock).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Not authorized: missing manager id",
+      data: null
+    });
+  });
+
   it("returns pending publishers", async () => {
     getAllPendingPublishersMock.mockResolvedValue([{ _id: "publisher-1" }]);
 
@@ -205,5 +290,21 @@ describe("manager.controller", () => {
 
     expect(approvePublisherMock).toHaveBeenCalledWith("publisher-1", "manager-1");
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it("returns 500 when pending publishers service fails", async () => {
+    getAllPendingPublishersMock.mockRejectedValue(new Error("db down"));
+
+    const req = {};
+    const res = createRes();
+
+    await getPendingPublishers(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Internal server error",
+      data: null
+    });
   });
 });
